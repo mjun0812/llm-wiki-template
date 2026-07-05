@@ -1,0 +1,21 @@
+repos:
+  - repo: https://github.com/oxc-project/mirrors-oxfmt
+    rev: v0.54.0
+    hooks:
+      - id: oxfmt
+        files: \.md$
+        types_or: [markdown]
+  - repo: local
+    hooks:
+      - id: check-sources
+        name: check sources
+        entry: python3 scripts/check_sources.py
+        language: system
+        pass_filenames: true
+        files: ^sources/.*\.md$
+      - id: check-image-links
+        name: check image links
+        entry: python3 scripts/check_image_links.py
+        language: system
+        pass_filenames: true
+        files: ^sources/.*\.md$
