@@ -1,12 +1,15 @@
 ---
 name: source-maintenance
-description: sources/ 配下の既存原資料を点検し、本文を変えずに配置、ファイル名、画像の相対関係、frontmatter のテンプレート準拠を確認・修正するSkill。inbox/ からの新規取り込み、wiki/ 更新、本文の要約・推敲は対象外。
+description: sources/ 配下の既存原資料を点検し、本文を変えずに配置、ファイル名、画像の相対関係、frontmatter のテンプレート準拠を確認・修正するSkill。ユーザーが「sourcesを点検して」「sourcesを整理して」「原資料を整備して」「source-maintenanceして」のように依頼したら使うこと。inbox/ からの新規取り込みは inbox-to-sources を、wiki/ 側の整理は wiki-maintenance を使う。本文の要約・推敲は対象外。
 ---
 
 # source-maintenance
 
 `sources/` 配下の既存原資料を保守する。
 新規取り込みではなく、すでに `sources/` にあるファイルの配置、ファイル名、frontmatter、画像配置を点検・修正する。
+
+最初に `sources/` 配下を確認し、`.md` が1件も無ければ「点検対象がない」と報告して終了する。
+`--dry-run` が指定された場合は、scriptを `--fix` なしで実行し、手順3までの点検結果 (診断一覧と移動・修正の予定) を提示して終了する。ファイルの移動・編集は一切行わない。
 
 ## ルール
 
@@ -73,7 +76,7 @@ python scripts/check_sources.py
 エラーが出た場合は該当ファイルだけを直し、修正対象の診断が消えるまで繰り返す。
 余分なfrontmatter keyだけの診断は、削除せず報告する。
 
-### 6. 報告する
+### 5. 報告する
 
 次を簡潔に報告する。
 

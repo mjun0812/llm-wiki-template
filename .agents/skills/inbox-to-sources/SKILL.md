@@ -8,6 +8,9 @@ description: inbox/ にあるメモを sources/{category}/ にカテゴリ分類
 `inbox/` のメモを `sources/{category}/` へ取り込み、原資料層を整える。
 `wiki/` 側の整理 (テーマ別ページ、リンク、index、changelog) はこのSkillの範囲外。
 
+最初に `inbox/` 直下を確認し、`.md` が1件も無ければ「取り込み対象がない」と報告して終了する。
+`--dry-run` が指定された場合は、手順1〜2 (現状確認と計画) だけを行い、移動計画 (移動元 → 移動先の一覧) とfrontmatterの変更予定を提示して終了する。ファイルの移動・編集は一切行わない。
+
 ## 不変条件
 
 - **分解禁止**：1つのメモを複数ファイルに分けない。複数テーマが混ざったメモも1ファイルのまま運ぶ。テーマ分解は wiki/ 側でやる。
@@ -78,7 +81,7 @@ model: "<model>"
 - `created` はファイル名の日付と一致させる。
 - `updated` は既存frontmatterの `updated`/`update` を引き継ぐ。なければ `created` と同じ値にする。
 - `model` は既存frontmatterにある値をそのまま引き継ぐ。空なら残さない。
-- 旧frontmatter (例：`tags`, `category`, `date`, `update`, `type`, `emoji`, `topics`, `published`) は削除する。title/created/updated/model 以外は残さない。Editツールで frontmatterブロック全体を置換する。
+- 旧frontmatter (例：`tags`, `category`, `date`, `update`, `type`, `emoji`, `topics`, `published`) は削除する。title/created/updated/model 以外は残さない。frontmatterブロック全体を新しい内容に置換する。
 - frontmatterがない場合は、本文の最初の数行を含めた `old_string` を作り、その直前に新frontmatterを挿入する。空ファイルだけは Write で作り直してよい。
 
 本文には触らない。
