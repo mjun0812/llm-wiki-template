@@ -24,6 +24,7 @@
 
 ## Skills
 
+- `research-to-inbox` — 与えたテーマをdeep researchして調査メモをinboxに作る
 - `inbox-to-sources` — inboxのメモをsourcesへ取り込む
 - `source-to-wiki` — sourcesの原資料からwikiを更新する
 - `wiki-maintenance` — 既存wikiの整理、統合、推敲
