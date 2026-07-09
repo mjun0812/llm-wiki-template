@@ -16,7 +16,7 @@
 ## Structure
 
 - `inbox/` — 未処理メモの投入箱
-- `sources/` — 原資料。カテゴリ別サブディレクトリに `YYYY-MM-DD_title.md` で保存
+- `sources/` — 原資料。カテゴリ別サブディレクトリに `YYYY-MM-DD_slug.md` で保存
 - `wiki/` — LLMが維持する知識ベース (`index.md` で索引、`changelog.md` で履歴)
 - `_template/` — Markdownテンプレート (`source.md` / `wiki.md`)
 - `scripts/` — 検証スクリプト
@@ -57,9 +57,8 @@
 | `SRC003` | `check_sources.py`     | `missing-required-key`      | `_template/source.md` にある必須キーがない。                              |
 | `SRC004` | `check_sources.py`     | `empty-frontmatter-value`   | 検査対象frontmatterキーの値が空になっている。                             |
 | `SRC005` | `check_sources.py`     | `unexpanded-placeholder`    | `{{...}}` 形式のテンプレート値が残っている。                              |
-| `SRC006` | `check_sources.py`     | `invalid-filename`          | ファイル名が `YYYY-MM-DD_title.md` 形式ではない。                         |
+| `SRC006` | `check_sources.py`     | `invalid-filename`          | ファイル名が `YYYY-MM-DD_slug.md` 形式ではない。                          |
 | `SRC007` | `check_sources.py`     | `created-mismatch`          | ファイル名の日付とfrontmatterの `created` が一致していない。              |
-| `SRC008` | `check_sources.py`     | `title-mismatch`            | ファイル名のタイトル部分とfrontmatterの `title` が一致していない。        |
 | `IMG001` | `check_image_links.py` | `missing-image`             | ローカル画像リンクの参照先ファイルが存在しない。                          |
 | `IMG002` | `check_image_links.py` | `noncanonical-image-target` | ローカル画像リンクがURLエンコードされている、またはスペースを含んでいる。 |
 
