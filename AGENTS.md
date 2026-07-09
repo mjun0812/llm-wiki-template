@@ -23,6 +23,7 @@
 - `inbox/` から `sources/` へメモを取り込むときは、local skill の `inbox-to-sources` を必ず使う。ファイル名規約 (`YYYY-MM-DD_slug.md`)、frontmatter整備、`scripts/check_sources.py` での検証はそこに集約してある。
 - `sources/` から `wiki/` を更新するときは、local skill の `source-to-wiki` を必ず使う。原資料は編集せず、Wiki本文、関連リンク、`wiki/index.md`、`wiki/changelog.md` の更新に集中する。
 - `wiki/` 以下の本文を作成・更新する場合は、local skillの `japanese-tech-writing` と `stop-ai-slop-jp` を使い、日本語文書として読みやすく、AI臭の少ない文章に整える。
+- このリポジトリの元になったtemplate repoの更新を取り込むときは、local skill の `template-sync` を必ず使う。更新の提示と選択、ファイル単位の適用はそこに集約してある。
 - Markdown内の画像リンク (`![alt](path)`) は、原則として **そのMarkdownファイルからの相対パス** で記述する。リポジトリのclone先やマウントパスに依存せず、GitHubやエディタプレビューで一貫して解決できるようにするため。外部画像は絶対URLで指定してよい。
 
 ## メモの検索
