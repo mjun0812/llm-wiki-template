@@ -61,7 +61,7 @@ category: "<category>"
 tags: []
 status: draft
 sources:
-  - "<relative-path-to-sources>/<category>/YYYY-MM-DD_title.md"
+  - "<relative-path-to-sources>/<category>/YYYY-MM-DD_slug.md"
 related: []
 created: "<YYYY-MM-DD>"
 updated: "<YYYY-MM-DD>"

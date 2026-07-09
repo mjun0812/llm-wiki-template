@@ -48,9 +48,9 @@ description: inbox/ にあるメモを sources/{category}/ にカテゴリ分類
 各ファイルについて次を決める。
 
 - カテゴリ：上の指針に従って決める。
-- 新ファイル名：`YYYY-MM-DD_title.md` 規約。
+- 新ファイル名：`YYYY-MM-DD_slug.md` 規約。
   - 日付：元ファイル名に日付があればそれを使う (`YYYYMMDD_` 形式はハイフン区切りに直す)。なければ本文中のメタデータ (例：`Scraped at: 2026-06-16`) を使い、それもなければ inbox 投入日を使う。
-  - title：ファイル名後半をベースにする。`check_sources.py` の正規表現は `.+` なので、日本語・スペース・大文字も許容される。kebab-case化は強制しない。
+  - slug：ファイル名後半をベースにする。`check_sources.py` の正規表現は `.+` なので、日本語・スペース・大文字も許容される。kebab-case化は強制しない。
 
 ### 3. 画像と一緒に動かす
 
@@ -78,7 +78,7 @@ model: "<model>"
 ---
 ```
 
-- `title` はファイル名の `YYYY-MM-DD_` より後ろ (拡張子除く) と一致させる。
+- `title` は内容に沿った題名にする (日本語可)。既存frontmatterの `title` が内容に合っていればそのまま引き継ぐ。ファイル名との一致は求めない。
 - `created` はファイル名の日付と一致させる。
 - `updated` は既存frontmatterの `updated`/`update` を引き継ぐ。なければ `created` と同じ値にする。
 - `model` は既存frontmatterにある値をそのまま引き継ぐ。空なら残さない。
@@ -93,9 +93,8 @@ model: "<model>"
 ruff風に `path:line: [SRCNNN] message` の形式で出力される。エラーが出たら該当ファイルだけ直す。よく当たるコードは次の通り。
 
 - `[SRC003] <key> がありません` → 必須キー (title/created/updated) のどれかが欠けている。
-- `[SRC006] ファイル名が YYYY-MM-DD_title.md 形式ではありません` → ファイル名を整える。
+- `[SRC006] ファイル名が YYYY-MM-DD_slug.md 形式ではありません` → ファイル名を整える。
 - `[SRC007] ファイル名の日付とfrontmatterの created が一致しません` → `created` をファイル名の日付に合わせる。
-- `[SRC008] ファイル名のtitle部分とfrontmatterの title が一致しません` → `title` をファイル名の `YYYY-MM-DD_` 以降と合わせる。
 
 ### 7. inbox の状態を確認
 

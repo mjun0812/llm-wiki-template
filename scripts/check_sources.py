@@ -10,9 +10,8 @@ Rules:
     SRC003  missing-required-key        a required frontmatter key is absent
     SRC004  empty-frontmatter-value     a checked frontmatter key has an empty value
     SRC005  unexpanded-placeholder      a `{{...}}` template placeholder remains
-    SRC006  invalid-filename            filename does not match `YYYY-MM-DD_title.md`
+    SRC006  invalid-filename            filename does not match `YYYY-MM-DD_slug.md`
     SRC007  created-mismatch            filename date does not match frontmatter `created`
-    SRC008  title-mismatch              filename title does not match frontmatter `title`
 """
 
 from __future__ import annotations
@@ -28,7 +27,7 @@ FRONTMATTER_DELIMITER = "---"
 PLACEHOLDER_PATTERN = re.compile(r"\{\{[^}]+\}\}")
 OPTIONAL_FRONTMATTER_KEYS = frozenset({"model"})
 SOURCE_FILENAME_PATTERN = re.compile(
-    r"^(?P<created>\d{4}-\d{2}-\d{2})_(?P<title>.+)\.md$"
+    r"^(?P<created>\d{4}-\d{2}-\d{2})_(?P<slug>.+)\.md$"
 )
 
 RULES_TABLE = (
@@ -37,9 +36,8 @@ RULES_TABLE = (
     "SRC003  missing-required-key        a required frontmatter key is absent\n"
     "SRC004  empty-frontmatter-value     a checked frontmatter key has an empty value\n"
     "SRC005  unexpanded-placeholder      a `{{...}}` template placeholder remains\n"
-    "SRC006  invalid-filename            filename does not match `YYYY-MM-DD_title.md`\n"
-    "SRC007  created-mismatch            filename date does not match frontmatter `created`\n"
-    "SRC008  title-mismatch              filename title does not match frontmatter `title`"
+    "SRC006  invalid-filename            filename does not match `YYYY-MM-DD_slug.md`\n"
+    "SRC007  created-mismatch            filename date does not match frontmatter `created`"
 )
 
 
@@ -262,7 +260,7 @@ def check_file(path: Path, required_keys: list[str]) -> list[Diagnostic]:
                 path=path,
                 line=1,
                 code="SRC006",
-                message="ファイル名が `YYYY-MM-DD_title.md` 形式ではありません",
+                message="ファイル名が `YYYY-MM-DD_slug.md` 形式ではありません",
             )
         )
         return diagnostics
@@ -277,17 +275,6 @@ def check_file(path: Path, required_keys: list[str]) -> list[Diagnostic]:
                 line=created_entry[0],
                 code="SRC007",
                 message="ファイル名の日付とfrontmatterの`created`が一致しません",
-            )
-        )
-
-    title_entry = entries.get("title")
-    if title_entry is not None and title_entry[1] != filename_match.group("title"):
-        diagnostics.append(
-            Diagnostic(
-                path=path,
-                line=title_entry[0],
-                code="SRC008",
-                message="ファイル名のtitle部分とfrontmatterの`title`が一致しません",
             )
         )
 
