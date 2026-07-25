@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{title}}</title>
+    <!-- 由来meta: 参照した sources/wiki のrepo相対パスと、生成時点の frontmatter updated を1件ずつ宣言する -->
+    <meta name="wiki-source" content="{{source-path}} {{source-updated}}" />
+    <link rel="stylesheet" href="assets/style.css" />
+  </head>
+  <body>
+    <header class="page-header">
+      <p class="provenance">
+        {{generated-date}} 時点の原資料・Wikiに基づく生成ページ。知識の正本はMarkdown側:
+        <a href="{{primary-source-relative-path}}">{{primary-source-label}}</a>
+      </p>
+      <h1>{{title}}</h1>
+      <p class="lead">{{lead}}</p>
+    </header>
+    <main>{{content}}</main>
+    <footer class="page-footer">
+      <h2>正本・参照元</h2>
+      <ul>
+        <li><a href="{{source-relative-path}}">{{source-label}}</a></li>
+      </ul>
+      <p class="muted"><a href="index.html">索引に戻る</a></p>
+    </footer>
+  </body>
+</html>
