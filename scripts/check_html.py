@@ -3,7 +3,7 @@
 
 Rules:
     HTML001  external-resource        resource is loaded from an external URL
-    HTML002  script-forbidden         script element is used
+    HTML002  disallowed-script        script other than the shared theme.js is used
     HTML003  iframe-forbidden         iframe element is used
     HTML004  stylesheet-mismatch      stylesheet is not exactly html/assets/style.css
     HTML005  missing-wiki-source      wiki-source meta is missing or malformed
@@ -36,6 +36,7 @@ RESOURCE_TAGS = {
 }
 URL_ATTRIBUTES = ("src", "href", "poster", "data")
 STYLESHEET_PATH = Path("html/assets/style.css")
+THEME_SCRIPT_PATH = Path("html/assets/theme.js")
 WIKI_SOURCE_PATTERN = re.compile(r"^(?P<path>\S+) (?P<date>\d{4}-\d{2}-\d{2})$")
 PLACEHOLDER_PATTERN = re.compile(r"\{\{[^}\n]*\}\}")
 FRONTMATTER_UPDATED_PATTERN = re.compile(
@@ -43,7 +44,7 @@ FRONTMATTER_UPDATED_PATTERN = re.compile(
 )
 RULES_TABLE = (
     "HTML001  external-resource        resource is loaded from an external URL\n"
-    "HTML002  script-forbidden         script element is used\n"
+    "HTML002  disallowed-script        script other than the shared theme.js is used\n"
     "HTML003  iframe-forbidden         iframe element is used\n"
     "HTML004  stylesheet-mismatch      stylesheet is not exactly html/assets/style.css\n"
     "HTML005  missing-wiki-source      wiki-source meta is missing or malformed\n"
@@ -234,11 +235,24 @@ def check_forbidden_elements(path: Path, elements: list[Element]) -> list[Diagno
         Diagnostics for HTML001, HTML002, and HTML003.
     """
     diagnostics: list[Diagnostic] = []
+    theme_script = THEME_SCRIPT_PATH.resolve()
     for element in elements:
         if element.tag == "script":
-            diagnostics.append(
-                Diagnostic(path, element.line, "HTML002", "scriptタグは使用できません")
+            src = element.attrs.get("src", "")
+            is_theme_script = (
+                bool(src)
+                and not is_external_url(src)
+                and (path.parent / unquote(src)).resolve() == theme_script
             )
+            if not is_theme_script:
+                diagnostics.append(
+                    Diagnostic(
+                        path,
+                        element.line,
+                        "HTML002",
+                        "scriptは共通スクリプト (html/assets/theme.js) だけを読み込めます",
+                    )
+                )
         if element.tag == "iframe":
             diagnostics.append(
                 Diagnostic(path, element.line, "HTML003", "iframeタグは使用できません")

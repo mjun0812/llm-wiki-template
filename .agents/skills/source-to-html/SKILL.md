@@ -17,7 +17,7 @@ Markdown側の編集、既存HTMLページの保守はこのSkillの範囲外。
 - **転記と表現はHTMLの自由**：`sources/` からの詳細な転記・要約と、視覚的な再構成 (カード、画像の横並び、表、折りたたみ) はHTML側の役割。`wiki/` のページ分けに縛られなくてよい。複数wikiページの統合も、1主題の掘り下げもできる。
 - **Markdown側は読むだけ**：`sources/` と `wiki/` 本文を変更しない。更新するのは `html/` 配下、`wiki/changelog.md` のみ。
 - **テンプレート必須**：ページは `_template/wiki-page.html` から作る。CSSは `assets/style.css` だけを参照し、style属性の直書きは最小限にする。
-- **JSなし・外部参照なし**：script・iframeは使わない。インタラクティブ表現はHTML標準要素 (`details` の折りたたみなど) で行う。画像を含むリソースはrepo内の相対パスで参照する。
+- **ページ個別のJSなし・外部参照なし**：scriptはテンプレートに含まれる共通のテーマ切替 (`assets/theme.js`) だけを読み込み、ページ個別のscriptとiframeは使わない。インタラクティブ表現はHTML標準要素 (`details` の折りたたみなど) で行う。画像を含むリソースはrepo内の相対パスで参照する。
 - **由来metaを必ず宣言する**：内容の根拠にしたすべての `sources/` `wiki/` のMarkdownを `<meta name="wiki-source" content="<repo相対パス> <そのファイルのfrontmatter updated>">` で1件ずつ宣言する。読んだが使わなかったファイルは含めない。
 - **手修正しない前提で作る**：生成後のHTMLは編集せず、更新はページ丸ごと再生成する (`html-maintenance` の範囲)。
 - **日本語で書く**：原資料が英語でも本文は日本語にする。

@@ -55,7 +55,7 @@
   - 自動修正: なし
 - `check_html.py`
   - 対象: 既定では `html/**/*.html`
-  - 概要: HTML版wikiページがテンプレート規約を満たしているか検査する。外部リソース参照・script・iframeの禁止、共通CSSのみの参照、由来meta (`wiki-source`) の宣言、ローカルリンクの存在を確認する。由来metaと参照先Markdownの `updated` がずれた陳腐化は警告として報告し、commitはブロックしない。
+  - 概要: HTML版wikiページがテンプレート規約を満たしているか検査する。外部リソース参照・iframeの禁止 (scriptは共通のテーマ切替スクリプトのみ許可)、共通CSSのみの参照、由来meta (`wiki-source`) の宣言、ローカルリンクの存在を確認する。由来metaと参照先Markdownの `updated` がずれた陳腐化は警告として報告し、commitはブロックしない。
   - メモ: `html/index.html` は由来metaの宣言を免除される。
   - 自動修正: なし
 
@@ -80,7 +80,7 @@
 | `WIKI003` | `check_wiki_links.py`  | `emphasized-link-label`     | リンクテキストにファイル名のアンダースコアが残り、強調として解釈されている。                  |
 | `WIKI004` | `check_wiki_links.py`  | `unreferenced-source`       | `sources/` のメモがどのWikiページからも参照されていない (`--check-unreferenced` 指定時のみ)。 |
 | `HTML001` | `check_html.py`        | `external-resource`         | CSS・画像などのリソースを外部URLから読み込んでいる (`a` の外部リンクは対象外)。               |
-| `HTML002` | `check_html.py`        | `script-forbidden`          | scriptタグを使用している。                                                                    |
+| `HTML002` | `check_html.py`        | `disallowed-script`         | 共通スクリプト (`html/assets/theme.js`) 以外のscriptを使用している。                          |
 | `HTML003` | `check_html.py`        | `iframe-forbidden`          | iframeタグを使用している。                                                                    |
 | `HTML004` | `check_html.py`        | `stylesheet-mismatch`       | stylesheetが共通CSS (`html/assets/style.css`) 1つになっていない。                             |
 | `HTML005` | `check_html.py`        | `missing-wiki-source`       | 由来meta (`wiki-source`) が無い、または形式が不正 (`html/index.html` は免除)。                |
