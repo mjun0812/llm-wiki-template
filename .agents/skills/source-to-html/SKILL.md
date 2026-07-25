@@ -1,15 +1,19 @@
 ---
 name: source-to-html
-description: sources/ の原資料と wiki/ の確定した結論を読み、リッチ表現のHTML版wikiページを html/ に生成するSkill。ユーザーが「このテーマをHTML化して」「html wikiを作って」「source-to-htmlして」のように対象を指定して依頼したときだけ使うこと。Markdown側 (sources/ wiki/) の編集は対象外で、HTMLページの生成、html/index.html と wiki/changelog.md の更新だけを行う。既存HTMLページの点検・再生成・削除は html-maintenance を使う。
+description: sources/ の原資料と wiki/ の確定した結論を読み、リッチ表現のHTML版wikiページを html/ に生成するSkill。ユーザーが「このテーマをHTML化して」「html wikiを作って」「source-to-htmlして」のように依頼したときのほか、inbox処理の最終ステップとしても実行する。対象未指定なら scripts/check_html.py --candidates の基準判定で自動選定し、基準を満たすテーマをすべて生成・再生成する。Markdown側 (sources/ wiki/) の編集は対象外で、HTMLページの生成、html/index.html と wiki/changelog.md の更新だけを行う。HTMLページの削除・索引整理は html-maintenance を使う。
 ---
 
 # source-to-html
 
 `sources/` の原資料と関連する `wiki/` ページを読み、リッチ表現のHTMLページを `html/` に生成する。
-Markdown側の編集、既存HTMLページの保守はこのSkillの範囲外。
+Markdown側の編集、HTMLページの削除・索引整理はこのSkillの範囲外。
 
-最初に対象を確認し、ユーザーがテーマや対象ページを指定していなければ、対象を確認して終了する。ユーザーの指定なしに生成するページを自分で選ばない。
-`--dry-run` が指定された場合は、手順1〜2 (対象確認と構成決定) だけを行い、生成予定のページ構成を提示して終了する。ファイルの作成・編集は一切行わない。
+対象は次のどちらかで決まる。
+
+- **ユーザーがテーマ・対象ページを指定した場合**: その対象だけ生成する。基準判定はせず、基準未満でも生成できる。
+- **対象未指定の場合 (inbox処理の自動実行を含む)**: `python3 scripts/check_html.py --candidates` を実行し、基準を満たすテーマのうち `missing` (未生成) と `stale` (陳腐化) をすべて確認なしで生成・再生成する。候補が無ければ「対象なし」と報告して終了する。生成基準 (参照sources件数、本文合計サイズ) はスクリプト側の定数が正であり、このSkillでは判定しない。
+
+`--dry-run` が指定された場合は、対象の決定と構成の検討 (手順1〜2) だけを行い、生成予定のページ一覧と判定根拠を提示して終了する。ファイルの作成・編集は一切行わない。
 
 ## ルール
 
@@ -24,15 +28,17 @@ Markdown側の編集、既存HTMLページの保守はこのSkillの範囲外。
 
 ## 手順
 
-### 1. 対象を確認する
+### 1. 対象を決める
 
-ユーザーが指定したテーマ・ページについて、根拠になる `sources/` のメモと、関連する `wiki/` ページ、`wiki/index.md` を読む。
+対象未指定なら `python3 scripts/check_html.py --candidates` で対象を確定する。
+対象の各テーマについて、根拠になる `sources/` のメモと、関連する `wiki/` ページ、`wiki/index.md` を読む。
 `html/index.html` があれば読み、既存ページとの重複を確認する。
+`stale` の候補は、既存HTMLページの由来metaに列挙されたMarkdownを読み直し、ページ丸ごと作り直す。
 
 ### 2. 構成を決める
 
 Markdownでは表現しにくい形 (比較のカード化、画像の横並び、手順の折りたたみ) が活きる構成に組み直す。
-テキストを流し込むだけならHTML化する価値が薄いため、その場合は生成を勧めない理由を報告して終了してよい。
+自動選定された候補は基準を満たした時点で生成対象として確定しているため、価値判断で生成を見送らない。構成の工夫で表現に落とし込む。
 
 ### 3. ページを生成する
 
@@ -69,7 +75,7 @@ Markdownでは表現しにくい形 (比較のカード化、画像の横並び�
 
 次を簡潔に報告する。
 
-- 生成したページと、その根拠にした `sources/` / `wiki/` ファイル
+- 生成・再生成したページと、その根拠にした `sources/` / `wiki/` ファイル (自動選定の場合は判定根拠も)
 - `html/index.html` / `wiki/changelog.md` の更新有無
 - 検証結果と、表示確認用のコマンド
 - wiki側に先に書くべき結論が見つかった場合は、`source-to-wiki` の実行提案

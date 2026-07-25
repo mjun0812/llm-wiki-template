@@ -29,7 +29,7 @@
 - `research-to-inbox` — 与えたテーマをdeep researchして調査メモをinboxに作る
 - `inbox-to-sources` — inboxのメモをsourcesへ取り込む
 - `source-to-wiki` — sourcesの原資料からwikiを更新する
-- `source-to-html` — sourcesとwikiからリッチ表現のHTML版wikiページを生成する
+- `source-to-html` — sourcesとwikiからリッチ表現のHTML版wikiページを生成する (対象未指定なら基準を満たすテーマを自動選定)
 - `wiki-maintenance` — 既存wikiの整理、統合、推敲
 - `html-maintenance` — 既存HTMLページの陳腐化検出、再生成、索引整理
 - `source-maintenance` — sources配下の配置とfrontmatterの点検
@@ -56,7 +56,7 @@
 - `check_html.py`
   - 対象: 既定では `html/**/*.html`
   - 概要: HTML版wikiページがテンプレート規約を満たしているか検査する。外部リソース参照・iframeの禁止 (scriptは共通のテーマ切替スクリプトのみ許可)、共通CSSのみの参照、由来meta (`wiki-source`) の宣言、ローカルリンクの存在を確認する。由来metaと参照先Markdownの `updated` がずれた陳腐化は警告として報告し、commitはブロックしない。
-  - メモ: `html/index.html` は由来metaの宣言を免除される。
+  - メモ: `html/index.html` は由来metaの宣言を免除される。`--candidates` を付けると、lintの代わりにHTML生成基準 (参照sourcesが3件以上、または本文合計30KB以上。基準値はスクリプト冒頭の定数) を満たすwikiページを `missing` / `stale` / `current` の状態付きで一覧する。
   - 自動修正: なし
 
 各スクリプトは、引数なしでは既定の対象を検査する。

@@ -11,6 +11,11 @@ Rules:
     HTML007  unexpanded-placeholder   {{...}} template placeholder remains
     HTML008  stale-page               wiki-source updated differs from the current
                                       frontmatter updated (warning only)
+
+With --candidates, lint rules are skipped. Instead, wiki pages that meet the
+HTML-generation criteria (referenced sources count or total source size) are
+listed with their state: missing (no HTML page yet), stale (HTML page exists
+but its wiki-source metas are outdated), or current.
 """
 
 from __future__ import annotations
@@ -37,6 +42,11 @@ RESOURCE_TAGS = {
 URL_ATTRIBUTES = ("src", "href", "poster", "data")
 STYLESHEET_PATH = Path("html/assets/style.css")
 THEME_SCRIPT_PATH = Path("html/assets/theme.js")
+WIKI_DIR = Path("wiki")
+HTML_DIR = Path("html")
+EXCLUDED_WIKI_FILES = {"changelog.md", "index.md"}
+CANDIDATE_MIN_SOURCES = 3
+CANDIDATE_MIN_TOTAL_BYTES = 30_000
 WIKI_SOURCE_PATTERN = re.compile(r"^(?P<path>\S+) (?P<date>\d{4}-\d{2}-\d{2})$")
 PLACEHOLDER_PATTERN = re.compile(r"\{\{[^}\n]*\}\}")
 FRONTMATTER_UPDATED_PATTERN = re.compile(
@@ -145,6 +155,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "*.html. Defaults to html/ when no path is given."
         ),
     )
+    parser.add_argument(
+        "--candidates",
+        action="store_true",
+        help=(
+            "List wiki pages that meet the HTML-generation criteria "
+            f"({CANDIDATE_MIN_SOURCES}+ sources or "
+            f"{CANDIDATE_MIN_TOTAL_BYTES}+ bytes of referenced sources) "
+            "with their state (missing / stale / current) instead of linting."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -222,6 +242,175 @@ def frontmatter_updated(path: Path) -> str | None:
         return None
     match = FRONTMATTER_UPDATED_PATTERN.search(text[:end])
     return match.group(1) if match is not None else None
+
+
+@dataclass(frozen=True)
+class Candidate:
+    """A wiki page that meets the HTML-generation criteria.
+
+    Attributes:
+        page: Wiki page path.
+        source_count: Number of frontmatter ``sources`` entries that exist.
+        total_bytes: Total size of the existing referenced source files.
+        state: ``missing`` (no HTML page derives from this wiki page),
+            ``stale`` (a derived HTML page has outdated wiki-source metas), or
+            ``current`` (derived HTML pages are up to date).
+        html_pages: HTML pages that declare this wiki page as a source.
+    """
+
+    page: Path
+    source_count: int
+    total_bytes: int
+    state: str
+    html_pages: list[Path]
+
+
+def frontmatter_sources(path: Path) -> list[str]:
+    """Read the frontmatter ``sources`` list from a Markdown file.
+
+    Args:
+        path: Markdown file path.
+
+    Returns:
+        Raw source path entries. Empty when the file has no parseable
+        frontmatter ``sources`` list.
+    """
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return []
+    if not text.startswith("---"):
+        return []
+    end = text.find("\n---", 3)
+    if end == -1:
+        return []
+    entries: list[str] = []
+    in_sources = False
+    for line in text[:end].splitlines():
+        if re.match(r"^sources:\s*$", line):
+            in_sources = True
+            continue
+        if not in_sources:
+            continue
+        item = re.match(r"^\s+-\s*\"?([^\"]+?)\"?\s*$", line)
+        if item is not None:
+            entries.append(item.group(1))
+            continue
+        in_sources = False
+    return entries
+
+
+def wiki_source_declarations(html_path: Path) -> list[tuple[str, str]]:
+    """Read wiki-source meta declarations from an HTML file.
+
+    Args:
+        html_path: HTML file path.
+
+    Returns:
+        ``(repo_relative_path, declared_updated)`` pairs for each valid
+        wiki-source meta.
+    """
+    collector = ElementCollector()
+    collector.feed(html_path.read_text(encoding="utf-8"))
+    declarations: list[tuple[str, str]] = []
+    for element in collector.elements:
+        if element.tag != "meta" or element.attrs.get("name") != "wiki-source":
+            continue
+        match = WIKI_SOURCE_PATTERN.match(element.attrs.get("content", ""))
+        if match is not None:
+            declarations.append((match.group("path"), match.group("date")))
+    return declarations
+
+
+def html_page_is_stale(html_path: Path) -> bool:
+    """Return whether any wiki-source declaration of an HTML page is outdated.
+
+    Args:
+        html_path: HTML file path.
+
+    Returns:
+        ``True`` when a declared source exists and its current frontmatter
+        ``updated`` differs from the declared date.
+    """
+    for source_path_text, declared_updated in wiki_source_declarations(html_path):
+        current_updated = frontmatter_updated(Path(source_path_text))
+        if current_updated is not None and current_updated != declared_updated:
+            return True
+    return False
+
+
+def collect_candidates() -> list[Candidate]:
+    """Collect wiki pages that meet the HTML-generation criteria.
+
+    Returns:
+        Candidates in wiki page order. A page qualifies when it references
+        ``CANDIDATE_MIN_SOURCES`` or more existing sources, or when the
+        referenced sources total ``CANDIDATE_MIN_TOTAL_BYTES`` bytes or more.
+    """
+    derived: dict[str, list[Path]] = {}
+    if HTML_DIR.is_dir():
+        for html_path in sorted(HTML_DIR.rglob("*.html")):
+            for declaration in wiki_source_declarations(html_path):
+                derived.setdefault(str(Path(declaration[0])), []).append(html_path)
+
+    candidates: list[Candidate] = []
+    if not WIKI_DIR.is_dir():
+        return candidates
+    for page in sorted(WIKI_DIR.rglob("*.md")):
+        if page.name in EXCLUDED_WIKI_FILES:
+            continue
+        referenced = [
+            (page.parent / unquote(entry)).resolve()
+            for entry in frontmatter_sources(page)
+        ]
+        existing = [target for target in referenced if target.is_file()]
+        total_bytes = sum(target.stat().st_size for target in existing)
+        if (
+            len(existing) < CANDIDATE_MIN_SOURCES
+            and total_bytes < CANDIDATE_MIN_TOTAL_BYTES
+        ):
+            continue
+        html_pages = derived.get(str(page), [])
+        if not html_pages:
+            state = "missing"
+        elif any(html_page_is_stale(html_path) for html_path in html_pages):
+            state = "stale"
+        else:
+            state = "current"
+        candidates.append(
+            Candidate(
+                page=page,
+                source_count=len(existing),
+                total_bytes=total_bytes,
+                state=state,
+                html_pages=html_pages,
+            )
+        )
+    return candidates
+
+
+def run_candidates() -> int:
+    """List candidate wiki pages for HTML generation.
+
+    Returns:
+        Exit code. Always ``0``; the listing is informational.
+    """
+    candidates = collect_candidates()
+    for candidate in candidates:
+        html_text = (
+            ", ".join(str(html_path) for html_path in candidate.html_pages) or "-"
+        )
+        print(
+            f"{candidate.page}\t{candidate.state}\t"
+            f"sources={candidate.source_count}\t"
+            f"total={candidate.total_bytes / 1000:.1f}KB\thtml={html_text}"
+        )
+    pending = [c for c in candidates if c.state in {"missing", "stale"}]
+    print(
+        f"Found {len(candidates)} candidate(s): "
+        f"{len(pending)} to generate or regenerate."
+    )
+    return 0
 
 
 def check_forbidden_elements(path: Path, elements: list[Element]) -> list[Diagnostic]:
@@ -490,6 +679,8 @@ def main(argv: list[str] | None = None) -> int:
         Exit code: ``0`` on success or warnings only, ``1`` when errors remain.
     """
     args = parse_args(argv)
+    if args.candidates:
+        return run_candidates()
     targets = collect_targets(args.paths)
     diagnostics = [
         diagnostic for target in targets for diagnostic in check_file(target)
