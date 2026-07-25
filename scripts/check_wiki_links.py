@@ -21,7 +21,7 @@ from urllib.parse import unquote, urlparse
 INDEX_FILENAME = "index.md"
 CHANGELOG_FILENAME = "changelog.md"
 MARKDOWN_LINK_PATTERN = re.compile(
-    r"(?<!!)\[(?P<label>(?:[^\[\]\n]|\\.)*)\]"
+    r"(?<!!)\[(?P<label>(?:[^\[\]\n]|\\.|\[[^\[\]\n]*\])*)\]"
     r"\((?:<(?P<angle>[^>\n]+)>|(?P<plain>[^)\s\n]+))\)"
 )
 EMPHASIS_PATTERN = re.compile(r"\*\*|\*|\\_")
