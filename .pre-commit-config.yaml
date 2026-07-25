@@ -18,4 +18,10 @@ repos:
         entry: python3 scripts/check_image_links.py
         language: system
         pass_filenames: true
-        files: ^sources/.*\.md$
+        files: ^(sources|wiki)/.*\.md$
+      - id: check-wiki-links
+        name: check wiki links
+        entry: python3 scripts/check_wiki_links.py
+        language: system
+        pass_filenames: false
+        files: ^(wiki|sources)/.*\.md$

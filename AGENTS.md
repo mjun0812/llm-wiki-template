@@ -6,7 +6,7 @@
 - `sources/` — 原資料。原則として内容を書き換えない。カテゴリ別のサブディレクトリに分かれるが、構成は固定ではなく新規メモに応じて見直してよい。
 - `wiki/` — LLMが整形・統合して維持する知識ベース。`index.md` で索引、`changelog.md` で取り込み履歴を管理する。
 - `_template/` — Markdownのテンプレート (`source.md` / `wiki.md`)。
-- `scripts/` — 検証スクリプト (`check_sources.py` / `check_image_links.py`)。
+- `scripts/` — 検証スクリプト (`check_sources.py` / `check_image_links.py` / `check_wiki_links.py`)。
 - `.agents/skills/` — local skill (`inbox-to-sources` など)。
 
 ## 基本方針
@@ -25,6 +25,8 @@
 - `wiki/` 以下の本文を作成・更新する場合は、local skillの `japanese-tech-writing` と `stop-ai-slop-jp` を使い、日本語文書として読みやすく、AI臭の少ない文章に整える。
 - このリポジトリの元になったtemplate repoの更新を取り込むときは、local skill の `template-sync` を必ず使う。更新の提示と選択、ファイル単位の適用はそこに集約してある。
 - Markdown内の画像リンク (`![alt](path)`) は、原則として **そのMarkdownファイルからの相対パス** で記述する。リポジトリのclone先やマウントパスに依存せず、GitHubやエディタプレビューで一貫して解決できるようにするため。外部画像は絶対URLで指定してよい。
+- 原資料へリンクするとき、`YYYY-MM-DD_slug.md` のファイル名をそのままリンクテキストに使わない。アンダースコアがMarkdownの強調として解釈され、`oxfmt` が斜体や太字へ変換して表示が崩れる。リンクテキストではアンダースコアをスペースに置き換える。
+- `oxfmt` はpre-commit hookで全Markdownに走る。`sources/` の本文編集を禁止するルールは、この整形には適用しない。
 
 ## メモの検索
 

@@ -44,23 +44,32 @@
   - 対象: 既定では `sources/**/*.md`
   - 概要: Markdown画像リンクとObsidian画像リンクのうち、ローカル画像ファイルを指すリンク先が存在するか、URLエンコードやスペースを含まない正規化済みのパスになっているかを検査する。外部URLや画像以外のリンクは対象外。
   - 自動修正: `--fix` でローカル画像リンクをURLデコードし、リンクと画像ファイル名のスペースをアンダースコアに置換し、それでも存在しない画像リンクを削除
+- `check_wiki_links.py`
+  - 対象: 既定では `wiki/**/*.md`
+  - 概要: Wikiページが `wiki/index.md` からリンクされているか、ローカルリンクの参照先が存在するか、リンクテキストがファイル名由来の強調に化けていないかを検査する。画像リンクは `check_image_links.py` が担当するため対象外。
+  - メモ: `--check-unreferenced` を付けると、どのWikiページからも参照されていない `sources/` のメモを報告する。原資料の一覧ページを置いて全メモを網羅する運用のときだけ使う。
+  - 自動修正: なし
 
 各スクリプトは、引数なしでは既定の対象を検査する。
 ファイルまたはディレクトリを引数に渡すと、その範囲だけを検査する。
 
 ### Lintルール
 
-| コード   | スクリプト             | ルール                      | 内容                                                                      |
-| -------- | ---------------------- | --------------------------- | ------------------------------------------------------------------------- |
-| `SRC001` | `check_sources.py`     | `missing-frontmatter`       | frontmatterが `---` で始まっていない。                                    |
-| `SRC002` | `check_sources.py`     | `unterminated-frontmatter`  | frontmatterの終了区切り `---` がない。                                    |
-| `SRC003` | `check_sources.py`     | `missing-required-key`      | `_template/source.md` にある必須キーがない。                              |
-| `SRC004` | `check_sources.py`     | `empty-frontmatter-value`   | 検査対象frontmatterキーの値が空になっている。                             |
-| `SRC005` | `check_sources.py`     | `unexpanded-placeholder`    | `{{...}}` 形式のテンプレート値が残っている。                              |
-| `SRC006` | `check_sources.py`     | `invalid-filename`          | ファイル名が `YYYY-MM-DD_slug.md` 形式ではない。                          |
-| `SRC007` | `check_sources.py`     | `created-mismatch`          | ファイル名の日付とfrontmatterの `created` が一致していない。              |
-| `IMG001` | `check_image_links.py` | `missing-image`             | ローカル画像リンクの参照先ファイルが存在しない。                          |
-| `IMG002` | `check_image_links.py` | `noncanonical-image-target` | ローカル画像リンクがURLエンコードされている、またはスペースを含んでいる。 |
+| コード    | スクリプト             | ルール                      | 内容                                                                                          |
+| --------- | ---------------------- | --------------------------- | --------------------------------------------------------------------------------------------- |
+| `SRC001`  | `check_sources.py`     | `missing-frontmatter`       | frontmatterが `---` で始まっていない。                                                        |
+| `SRC002`  | `check_sources.py`     | `unterminated-frontmatter`  | frontmatterの終了区切り `---` がない。                                                        |
+| `SRC003`  | `check_sources.py`     | `missing-required-key`      | `_template/source.md` にある必須キーがない。                                                  |
+| `SRC004`  | `check_sources.py`     | `empty-frontmatter-value`   | 検査対象frontmatterキーの値が空になっている。                                                 |
+| `SRC005`  | `check_sources.py`     | `unexpanded-placeholder`    | `{{...}}` 形式のテンプレート値が残っている。                                                  |
+| `SRC006`  | `check_sources.py`     | `invalid-filename`          | ファイル名が `YYYY-MM-DD_slug.md` 形式ではない。                                              |
+| `SRC007`  | `check_sources.py`     | `created-mismatch`          | ファイル名の日付とfrontmatterの `created` が一致していない。                                  |
+| `IMG001`  | `check_image_links.py` | `missing-image`             | ローカル画像リンクの参照先ファイルが存在しない。                                              |
+| `IMG002`  | `check_image_links.py` | `noncanonical-image-target` | ローカル画像リンクがURLエンコードされている、またはスペースを含んでいる。                     |
+| `WIKI001` | `check_wiki_links.py`  | `unindexed-page`            | Wikiページが `wiki/index.md` からリンクされていない。                                         |
+| `WIKI002` | `check_wiki_links.py`  | `missing-link-target`       | ローカルリンクの参照先ファイルが存在しない。                                                  |
+| `WIKI003` | `check_wiki_links.py`  | `emphasized-link-label`     | リンクテキストにファイル名のアンダースコアが残り、強調として解釈されている。                  |
+| `WIKI004` | `check_wiki_links.py`  | `unreferenced-source`       | `sources/` のメモがどのWikiページからも参照されていない (`--check-unreferenced` 指定時のみ)。 |
 
 ## Setup
 
@@ -76,9 +85,12 @@ pre-commit install
 ```sh
 python3 scripts/check_sources.py
 python3 scripts/check_image_links.py
+python3 scripts/check_wiki_links.py
 ```
 
 MarkdownのフォーマットにはoxfmtをPre-commit hookで使用する。
+oxfmtはリンクテキスト内のアンダースコアを強調記号として解釈するため、原資料へのリンクを書くときはファイル名をそのまま貼らない。
+崩れは `check_wiki_links.py` の `WIKI003` で検出できる。
 
 ## 検索 Cheet Sheet
 
