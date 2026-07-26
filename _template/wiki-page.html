@@ -11,21 +11,41 @@
   </head>
   <body>
     <button class="theme-toggle" type="button" aria-label="テーマ切替">🌙</button>
-    <header class="page-header">
-      <p class="provenance">
-        {{generated-date}} 時点の原資料・Wikiに基づく生成ページ。知識の正本はMarkdown側:
-        <a href="{{primary-source-relative-path}}">{{primary-source-label}}</a>
-      </p>
-      <h1>{{title}}</h1>
-      <p class="lead">{{lead}}</p>
-    </header>
-    <main>{{content}}</main>
-    <footer class="page-footer">
-      <h2>正本・参照元</h2>
-      <ul>
-        <li><a href="{{source-relative-path}}">{{source-label}}</a></li>
-      </ul>
-      <p class="muted"><a href="index.html">索引に戻る</a></p>
-    </footer>
+    <div class="layout">
+      <!-- 左サイドバー: html/index.html と同じ全ページの索引。現在ページには aria-current="page" を付ける -->
+      <nav class="site-nav" aria-label="索引">
+        <p class="site-nav-title"><a href="index.html">HTML版Wiki 索引</a></p>
+        <p class="site-nav-group">{{category}}</p>
+        <ul>
+          <li><a href="{{page-href}}">{{page-title}}</a></li>
+        </ul>
+      </nav>
+      <div class="page">
+        <header class="page-header">
+          <p class="provenance">
+            {{generated-date}} 時点の原資料・Wikiに基づく生成ページ。知識の正本はMarkdown側:
+            <a href="{{primary-source-relative-path}}">{{primary-source-label}}</a>
+          </p>
+          <h1>{{title}}</h1>
+          <p class="lead">{{lead}}</p>
+        </header>
+        <!-- main内の各h2には id="sec-N" を付け、右サイドバーの目次からリンクする -->
+        <main>{{content}}</main>
+        <footer class="page-footer">
+          <h2>正本・参照元</h2>
+          <ul>
+            <li><a href="{{source-relative-path}}">{{source-label}}</a></li>
+          </ul>
+          <p class="muted"><a href="index.html">索引に戻る</a></p>
+        </footer>
+      </div>
+      <!-- 右サイドバー: このページのh2見出しの目次 -->
+      <aside class="toc" aria-label="目次">
+        <p class="toc-title">目次</p>
+        <ul>
+          <li><a href="#sec-1">{{section-title}}</a></li>
+        </ul>
+      </aside>
+    </div>
   </body>
 </html>
