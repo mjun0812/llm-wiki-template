@@ -48,7 +48,9 @@ Markdownでは表現しにくい形 (比較のカード化、画像の横並び�
 - ヘッダーの provenance には生成日と正本への相対リンクを入れる。
 - 由来metaには根拠にした全Markdownを宣言する。`updated` が無いファイルは `created` を使う。
 - フッターの「正本・参照元」に、由来metaと同じファイルへの相対リンクを列挙する。リンクテキストのアンダースコアはスペースに置き換える。
-- 共通CSSのコンポーネント (`.card-grid` / `.figure-row` / `.callout` / `.badge` / `details`) を優先して使う。
+- 共通CSSのコンポーネント (`.card-grid` / `.figure-row` / `.callout` / `.badge` / `details` / `.table-scroll`) を優先して使う。
+- テーブルは必ず `<div class="table-scroll">` で包む。
+- 注意・制約・リスク・未確認事項のcalloutには `.callout.warn`、補足には `.callout.info` を使う。ネガティブ寄りのラベル (未読・非推奨など) のbadgeには `.badge.warn` を使う。
 
 ### 4. 索引を更新する
 

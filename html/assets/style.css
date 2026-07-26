@@ -74,9 +74,14 @@
   box-sizing: border-box;
 }
 
+html {
+  /* 右サイドバーの目次からのアンカージャンプを滑らかにする */
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0 auto;
-  max-width: 72rem;
+  max-width: 104rem;
   padding: 2rem 1.5rem 4rem;
   background: hsl(var(--background));
   color: hsl(var(--foreground));
@@ -111,6 +116,11 @@ h2 {
 h3 {
   font-size: 1.15rem;
   margin: 1.75rem 0 0.5rem;
+}
+
+h4 {
+  font-size: 1rem;
+  margin: 1.25rem 0 0.5rem;
 }
 
 a {
@@ -170,6 +180,16 @@ table {
   border-collapse: collapse;
   margin: 1rem 0;
   font-size: 0.925rem;
+}
+
+/* 列数の多いテーブルはこのラッパーで包み、本文をはみ出さず横スクロールさせる */
+.table-scroll {
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.table-scroll > table {
+  margin: 0;
 }
 
 th,
@@ -232,9 +252,17 @@ th {
 
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  /*
+   * auto-fitで空トラックを畳み、カード枚数が少ないときは横幅いっぱいに広げる。
+   * min(100%, 22rem) は、狭い画面で22remを確保できない場合のはみ出し防止。
+   */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
   gap: 1rem;
   margin: 1rem 0;
+}
+
+.card-grid > .card {
+  min-width: 0;
 }
 
 .figure-row {
@@ -273,6 +301,13 @@ figure figcaption {
   border-color: hsl(var(--primary));
 }
 
+/* 注意・制約・未読などのネガティブ寄りのラベル */
+.badge.warn {
+  background: hsl(var(--destructive));
+  color: hsl(var(--destructive-foreground));
+  border-color: hsl(var(--destructive));
+}
+
 .callout {
   border: 1px solid hsl(var(--border));
   border-left: 4px solid hsl(var(--primary));
@@ -280,6 +315,16 @@ figure figcaption {
   background: hsl(var(--muted) / 0.5);
   padding: 0.75rem 1.1rem;
   margin: 1rem 0;
+}
+
+/* 注意・制約・リスク・未確認事項 */
+.callout.warn {
+  border-left-color: hsl(var(--destructive));
+}
+
+/* 補足・参考情報 (既定の.calloutより控えめ) */
+.callout.info {
+  border-left-color: hsl(var(--muted-foreground));
 }
 
 details {
@@ -299,6 +344,105 @@ details summary {
 details[open] summary {
   border-bottom: 1px solid hsl(var(--border));
   margin-bottom: 0.6rem;
+}
+
+/* サイドバー付きレイアウト: 左に索引ナビ、中央に本文、右に目次 */
+
+.layout {
+  display: flex;
+  gap: 2.5rem;
+  align-items: flex-start;
+}
+
+.layout .page {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 72rem;
+  margin: 0 auto;
+}
+
+.site-nav,
+.toc {
+  position: sticky;
+  top: 1rem;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+
+.site-nav {
+  flex: 0 0 15rem;
+  font-size: 0.9rem;
+}
+
+.toc {
+  flex: 0 0 13rem;
+  font-size: 0.85rem;
+}
+
+.site-nav ul,
+.toc ul {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+}
+
+.site-nav li,
+.toc li {
+  margin: 0.35rem 0;
+  line-height: 1.4;
+}
+
+.site-nav a,
+.toc a {
+  color: hsl(var(--muted-foreground));
+  text-decoration: none;
+}
+
+.site-nav a:hover,
+.toc a:hover {
+  color: hsl(var(--foreground));
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.site-nav a[aria-current="page"] {
+  color: hsl(var(--foreground));
+  font-weight: 600;
+}
+
+.site-nav-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.site-nav-title a {
+  color: hsl(var(--foreground));
+}
+
+.site-nav-group,
+.toc-title {
+  margin: 1rem 0 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: hsl(var(--muted-foreground));
+}
+
+.toc-title {
+  margin-top: 0;
+}
+
+@media (max-width: 1280px) {
+  .toc {
+    display: none;
+  }
+}
+
+@media (max-width: 960px) {
+  .site-nav {
+    display: none;
+  }
 }
 
 .theme-toggle {
