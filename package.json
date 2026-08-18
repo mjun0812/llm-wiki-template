@@ -1,0 +1,9 @@
+{
+  "name": "llm-wiki-template",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "defuddle": "^0.19.2",
+    "jsdom": "^30.0.1"
+  }
+}

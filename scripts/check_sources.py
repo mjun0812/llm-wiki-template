@@ -25,7 +25,17 @@ from pathlib import Path
 
 FRONTMATTER_DELIMITER = "---"
 PLACEHOLDER_PATTERN = re.compile(r"\{\{[^}]+\}\}")
-OPTIONAL_FRONTMATTER_KEYS = frozenset({"model"})
+OPTIONAL_FRONTMATTER_KEYS = frozenset(
+    {
+        "model",
+        "source_url",
+        "canonical_url",
+        "retrieved_at",
+        "published_at",
+        "author",
+        "extractor",
+    }
+)
 SOURCE_FILENAME_PATTERN = re.compile(
     r"^(?P<created>\d{4}-\d{2}-\d{2})_(?P<slug>.+)\.md$"
 )

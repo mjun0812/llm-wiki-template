@@ -27,6 +27,7 @@
 ## Skills
 
 - `research-to-inbox` — 与えたテーマをdeep researchして調査メモをinboxに作る
+- `web-to-inbox` — 公開WebページのURLを `scripts/web-to-markdown.mjs` でMarkdown化してinboxに保存する
 - `inbox-to-sources` — inboxのメモをsourcesへ取り込む
 - `source-to-wiki` — sourcesの原資料からwikiを更新する
 - `source-to-html` — sourcesとwikiからリッチ表現のHTML版wikiページを生成する (対象未指定なら基準を満たすテーマを自動選定)
@@ -42,7 +43,7 @@
 - `check_sources.py`
   - 対象: `sources/**/*.md`
   - 概要: `sources/` 以下のMarkdownが `_template/source.md` のfrontmatterとファイル名規約を満たしているか検査する。
-  - メモ: `model` はLLM生成元を残すための任意frontmatterとして保持できる。
+  - メモ: `model` と Web取り込み由来のprovenance key (`source_url` / `canonical_url` / `retrieved_at` / `published_at` / `author` / `extractor`) を任意frontmatterとして保持できる。
   - 自動修正: なし
 - `check_image_links.py`
   - 対象: 既定では `sources/**/*.md`
@@ -58,8 +59,12 @@
   - 概要: HTML版wikiページがテンプレート規約を満たしているか検査する。外部リソース参照・iframeの禁止 (scriptは共通のテーマ切替スクリプトのみ許可)、共通CSSのみの参照、由来meta (`wiki-source`) の宣言、ローカルリンクの存在を確認する。由来metaと参照先Markdownの `updated` がずれた陳腐化は警告として報告し、commitはブロックしない。
   - メモ: `html/index.html` は由来metaの宣言を免除される。`--candidates` を付けると、lintの代わりにHTML生成基準 (参照sourcesが3件以上、または本文合計30KB以上。基準値はスクリプト冒頭の定数) を満たすwikiページを `missing` / `stale` / `current` の状態付きで一覧する。
   - 自動修正: なし
+- `web-to-markdown.mjs`
+  - 対象: 公開WebページのURL
+  - 概要: Defuddleで本文を抽出してMarkdown化し、`inbox/` に保存する。記事中の画像は `inbox/images/` へローカル保存してリンクを相対パスへ書き換える。本文の要約・翻訳・推敲はせず、`source_url` などのprovenance frontmatterを付与する。実行は `node scripts/web-to-markdown.mjs <URL>`。Agent向けに `--json` でJSONを返す。オプションは `--help` を参照。
+  - 依存: `package.json` の `defuddle` / `jsdom` (`npm install` で導入)
 
-各スクリプトは、引数なしでは既定の対象を検査する。
+検証スクリプト (`check_*.py`) は、引数なしでは既定の対象を検査する。
 ファイルまたはディレクトリを引数に渡すと、その範囲だけを検査する。
 
 ### Lintルール
