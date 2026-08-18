@@ -267,8 +267,41 @@ def target_needs_normalization(target: str) -> bool:
     return target != normalize_image_target(target)
 
 
+def fenced_code_ranges(text: str) -> list[tuple[int, int]]:
+    """Find character ranges covered by fenced code blocks.
+
+    Links written inside ``` / ~~~ fences are illustrative examples, not real
+    image references, so callers use these ranges to skip them.
+
+    Args:
+        text: Markdown source text.
+
+    Returns:
+        Half-open ``(start, end)`` character offsets of each fenced block.
+    """
+    ranges: list[tuple[int, int]] = []
+    fence: str | None = None
+    start = 0
+    offset = 0
+    for line in text.splitlines(keepends=True):
+        stripped = line.lstrip()
+        if fence is None:
+            if stripped.startswith(("```", "~~~")):
+                fence = stripped[:3]
+                start = offset
+        elif stripped.startswith(fence):
+            ranges.append((start, offset + len(line)))
+            fence = None
+        offset += len(line)
+    if fence is not None:
+        ranges.append((start, len(text)))
+    return ranges
+
+
 def find_image_links(text: str) -> list[ImageLink]:
     """Find Markdown and Obsidian image links in text.
+
+    Image links inside fenced code blocks are skipped.
 
     Args:
         text: Markdown source text.
@@ -276,10 +309,17 @@ def find_image_links(text: str) -> list[ImageLink]:
     Returns:
         Image link occurrences in source order.
     """
+    code_ranges = fenced_code_ranges(text)
+
+    def in_fenced_code(position: int) -> bool:
+        return any(start <= position < end for start, end in code_ranges)
+
     links: list[ImageLink] = []
     for match in MARKDOWN_IMAGE_PATTERN.finditer(text):
         target = normalize_markdown_target(match.group("target"))
         if is_external_target(target) or not is_image_target(target):
+            continue
+        if in_fenced_code(match.start()):
             continue
         links.append(
             ImageLink(
@@ -297,6 +337,8 @@ def find_image_links(text: str) -> list[ImageLink]:
     for match in OBSIDIAN_IMAGE_PATTERN.finditer(text):
         target = normalize_obsidian_target(match.group("target"))
         if is_external_target(target) or not is_image_target(target):
+            continue
+        if in_fenced_code(match.start()):
             continue
         links.append(
             ImageLink(
