@@ -7,7 +7,7 @@
 - `wiki/` — LLMが整形・統合して維持する知識ベース。`index.md` で索引、`changelog.md` で取り込み履歴を管理する。
 - `html/` — LLMが生成するHTML版wiki。`wiki/` とはページ分けを変えてよい派生層で、共通のCSSとテーマ切替スクリプトは `html/assets/` に置く。知識の正本は常にMarkdown側 (`sources/` と `wiki/`)。
 - `_template/` — テンプレート (`source.md` / `wiki.md` / `wiki-page.html`)。
-- `scripts/` — 検証スクリプト (`check_sources.py` / `check_image_links.py` / `check_wiki_links.py` / `check_html.py`)。
+- `scripts/` — 検証スクリプト (`check_sources.py` / `check_image_links.py` / `check_wiki_links.py` / `check_html.py`) と、Web取り込みCLI (`web-to-markdown.mjs`)。
 - `.agents/skills/` — local skill (`inbox-to-sources` など)。
 
 ## 基本方針
@@ -21,6 +21,7 @@
 - `wiki/changelog.md` は最新の履歴が一番上に来るように追記する。
 - 新規Markdownを作る場合は、用途に合う `_template/` 以下のテンプレートを使う。
 - ユーザーが与えたテーマを調べて調査メモを作るときは、local skill の `research-to-inbox` を必ず使う。メモは `inbox/` に保存し、以降は通常のinbox処理に乗せる。
+- 公開WebページのURLをメモとして取り込むときは、local skill の `web-to-inbox` を必ず使う。本文抽出とMarkdown化は `scripts/web-to-markdown.mjs` (Defuddleベース) が行い、本文の要約・翻訳・推敲はしない。メモは `inbox/` に保存し、以降は通常のinbox処理に乗せる。Web由来のprovenance frontmatter (`source_url` / `canonical_url` / `retrieved_at` / `published_at` / `author` / `extractor`) は `sources/` へ移した後も保持する。
 - `inbox/` から `sources/` へメモを取り込むときは、local skill の `inbox-to-sources` を必ず使う。ファイル名規約 (`YYYY-MM-DD_slug.md`)、frontmatter整備、`scripts/check_sources.py` での検証はそこに集約してある。
 - `sources/` から `wiki/` を更新するときは、local skill の `source-to-wiki` を必ず使う。原資料は編集せず、Wiki本文、関連リンク、`wiki/index.md`、`wiki/changelog.md` の更新に集中する。
 - `wiki/` 以下の本文を作成・更新する場合は、local skillの `japanese-tech-writing` と `stop-ai-slop-jp` を使い、日本語文書として読みやすく、AI臭の少ない文章に整える。

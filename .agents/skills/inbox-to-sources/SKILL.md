@@ -66,8 +66,18 @@ description: inbox/ にあるメモを sources/{category}/ にカテゴリ分類
 
 `_template/source.md` に従い、frontmatterを整える。
 必須キーは `title` / `created` / `updated` の3つ。
-既存frontmatterに `model` がある場合だけ、任意の出所メタデータとして保持する。
-`model` がないファイルに推測で追加しない。
+既存frontmatterに次の出所メタデータ (provenance key) がある場合だけ、値をそのまま保持する。
+存在しないkeyを推測で追加しない。
+
+```text
+model
+source_url
+canonical_url
+retrieved_at
+published_at
+author
+extractor
+```
 
 ```yaml
 ---
@@ -82,7 +92,8 @@ model: "<model>"
 - `created` はファイル名の日付と一致させる。
 - `updated` は既存frontmatterの `updated`/`update` を引き継ぐ。なければ `created` と同じ値にする。
 - `model` は既存frontmatterにある値をそのまま引き継ぐ。空なら残さない。
-- 旧frontmatter (例：`tags`, `category`, `date`, `update`, `type`, `emoji`, `topics`, `published`) は削除する。title/created/updated/model 以外は残さない。frontmatterブロック全体を新しい内容に置換する。
+- `source_url` / `canonical_url` / `retrieved_at` / `published_at` / `author` / `extractor` (web-to-inbox 由来のメモが持つ) も同様に、既存の値をそのまま引き継ぐ。空なら残さない。
+- 旧frontmatter (例：`tags`, `category`, `date`, `update`, `type`, `emoji`, `topics`, `published`) は削除する。必須キーと上記のprovenance key以外は残さない。frontmatterブロック全体を新しい内容に置換する。
 - frontmatterがない場合は、本文の最初の数行を含めた `old_string` を作り、その直前に新frontmatterを挿入する。空ファイルだけは Write で作り直してよい。
 
 本文には触らない。
