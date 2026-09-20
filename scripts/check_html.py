@@ -3,14 +3,15 @@
 
 Rules:
     HTML001  external-resource        resource is loaded from an external URL
-    HTML002  disallowed-script        script other than the shared theme.js is used
+    HTML002  disallowed-script        script differs from the template blocks
     HTML003  iframe-forbidden         iframe element is used
-    HTML004  stylesheet-mismatch      stylesheet is not exactly html/assets/style.css
+    HTML004  stylesheet-mismatch      style differs from the template
     HTML005  missing-wiki-source      wiki-source meta is missing or malformed
     HTML006  missing-link-target      local link target does not exist
     HTML007  unexpanded-placeholder   {{...}} template placeholder remains
     HTML008  stale-page               wiki-source updated differs from the current
                                       frontmatter updated (warning only)
+    HTML009  invalid-navigation       sidebar or page anchors are invalid
 
 With --candidates, lint rules are skipped. Instead, wiki pages that meet the
 HTML-generation criteria (referenced sources count or total source size) are
@@ -40,8 +41,9 @@ RESOURCE_TAGS = {
     "video",
 }
 URL_ATTRIBUTES = ("src", "href", "poster", "data")
-STYLESHEET_PATH = Path("html/assets/style.css")
-THEME_SCRIPT_PATH = Path("html/assets/theme.js")
+TEMPLATE_PATH = Path(__file__).resolve().parent.parent / "_template/wiki-page.html"
+TEMPLATE_MARKER = "<!-- source-to-html template v2 -->"
+TEMPLATE_BLOCKS = ("runtime", "mathjax", "shiki", "mermaid")
 WIKI_DIR = Path("wiki")
 HTML_DIR = Path("html")
 EXCLUDED_WIKI_FILES = {"changelog.md", "index.md"}
@@ -54,13 +56,14 @@ FRONTMATTER_UPDATED_PATTERN = re.compile(
 )
 RULES_TABLE = (
     "HTML001  external-resource        resource is loaded from an external URL\n"
-    "HTML002  disallowed-script        script other than the shared theme.js is used\n"
+    "HTML002  disallowed-script        script differs from the template blocks\n"
     "HTML003  iframe-forbidden         iframe element is used\n"
-    "HTML004  stylesheet-mismatch      stylesheet is not exactly html/assets/style.css\n"
+    "HTML004  stylesheet-mismatch      style differs from the template\n"
     "HTML005  missing-wiki-source      wiki-source meta is missing or malformed\n"
     "HTML006  missing-link-target      local link target does not exist\n"
     "HTML007  unexpanded-placeholder   {{...}} template placeholder remains\n"
-    "HTML008  stale-page               wiki-source updated differs (warning only)"
+    "HTML008  stale-page               wiki-source updated differs (warning only)\n"
+    "HTML009  invalid-navigation       sidebar or page anchors are invalid"
 )
 
 
@@ -424,24 +427,13 @@ def check_forbidden_elements(path: Path, elements: list[Element]) -> list[Diagno
         Diagnostics for HTML001, HTML002, and HTML003.
     """
     diagnostics: list[Diagnostic] = []
-    theme_script = THEME_SCRIPT_PATH.resolve()
     for element in elements:
         if element.tag == "script":
-            src = element.attrs.get("src", "")
-            is_theme_script = (
-                bool(src)
-                and not is_external_url(src)
-                and (path.parent / unquote(src)).resolve() == theme_script
-            )
-            if not is_theme_script:
-                diagnostics.append(
-                    Diagnostic(
-                        path,
-                        element.line,
-                        "HTML002",
-                        "scriptは共通スクリプト (html/assets/theme.js) だけを読み込めます",
-                    )
+            diagnostics.append(
+                Diagnostic(
+                    path, element.line, "HTML002", "テンプレート以外のscriptです"
                 )
+            )
         if element.tag == "iframe":
             diagnostics.append(
                 Diagnostic(path, element.line, "HTML003", "iframeタグは使用できません")
@@ -462,46 +454,111 @@ def check_forbidden_elements(path: Path, elements: list[Element]) -> list[Diagno
     return diagnostics
 
 
-def check_stylesheets(path: Path, elements: list[Element]) -> list[Diagnostic]:
-    """Check that the page references exactly the shared stylesheet.
+def check_template(path: Path, text: str) -> tuple[list[Diagnostic], str]:
+    """Validate fixed template blocks and remove them before resource checks.
 
     Args:
-        path: HTML file path.
-        elements: Collected start tags.
+        path: HTML page to report.
+        text: Generated page source.
 
     Returns:
-        Diagnostics for HTML004.
+        Diagnostics and HTML with trusted template blocks replaced by blank lines.
     """
-    stylesheets = [
-        element
-        for element in elements
-        if element.tag == "link"
-        and "stylesheet" in element.attrs.get("rel", "").lower()
-        and not is_external_url(element.attrs.get("href", ""))
-    ]
+    template = TEMPLATE_PATH.read_text(encoding="utf-8")
     diagnostics: list[Diagnostic] = []
-    expected = STYLESHEET_PATH.resolve()
-    for element in stylesheets:
-        href = unquote(element.attrs.get("href", ""))
-        resolved = (path.parent / href).resolve()
-        if resolved != expected:
+    if not text.startswith(TEMPLATE_MARKER):
+        diagnostics.append(
+            Diagnostic(path, 1, "HTML004", "現行テンプレートで再生成してください")
+        )
+    rest = text
+    patterns = [("style", re.compile(r"<style>.*?</style>", re.DOTALL))]
+    patterns.extend(
+        (
+            name,
+            re.compile(rf"<!-- exhtml:{name}\b.*?<!-- /exhtml:{name} -->", re.DOTALL),
+        )
+        for name in TEMPLATE_BLOCKS
+    )
+    for name, pattern in patterns:
+        matches = list(pattern.finditer(text))
+        expected = pattern.search(template)
+        assert expected is not None
+        code = "HTML004" if name == "style" else "HTML002"
+        if (name in {"style", "runtime"} and len(matches) != 1) or len(matches) > 1:
+            diagnostics.append(
+                Diagnostic(path, 1, code, f"{name} ブロックの数が不正です")
+            )
+        for match in matches:
+            if match.group() != expected.group():
+                diagnostics.append(
+                    Diagnostic(
+                        path,
+                        line_number_of(text, match.group()),
+                        code,
+                        f"{name} がテンプレートと一致しません",
+                    )
+                )
+        rest = pattern.sub(lambda match: "\n" * match.group().count("\n"), rest)
+    collector = ElementCollector()
+    collector.feed(rest)
+    if any(
+        element.tag == "style"
+        or (element.tag == "link" and "stylesheet" in element.attrs.get("rel", ""))
+        for element in collector.elements
+    ):
+        diagnostics.append(
+            Diagnostic(path, 1, "HTML004", "ページ固有のCSSは追加できません")
+        )
+    return diagnostics, rest
+
+
+def check_navigation(path: Path, elements: list[Element]) -> list[Diagnostic]:
+    """Check heading and glossary anchors in a generated page.
+
+    Args:
+        path: HTML page to report.
+        elements: Page tags outside the fixed template blocks.
+
+    Returns:
+        HTML009 diagnostics for invalid page navigation.
+    """
+    diagnostics: list[Diagnostic] = []
+    ids = [element.attrs["id"] for element in elements if element.attrs.get("id")]
+    for element in elements:
+        identifier = element.attrs.get("id", "")
+        target = element.attrs.get("href", "")
+        if identifier and ids.count(identifier) > 1:
+            diagnostics.append(
+                Diagnostic(
+                    path, element.line, "HTML009", f"idが重複しています: {identifier}"
+                )
+            )
+        if target.startswith("#") and unquote(target[1:]) not in ids:
             diagnostics.append(
                 Diagnostic(
                     path,
                     element.line,
-                    "HTML004",
-                    f"stylesheetは共通CSSだけを参照してください: `{href}`",
+                    "HTML009",
+                    f"ページ内リンク先がありません: {target}",
                 )
             )
-    if not stylesheets:
-        diagnostics.append(
-            Diagnostic(
-                path,
-                1,
-                "HTML004",
-                "共通CSS (html/assets/style.css) への stylesheet がありません",
+        if element.tag in {"h2", "h3"} and not identifier:
+            diagnostics.append(
+                Diagnostic(path, element.line, "HTML009", "h2/h3にidがありません")
             )
-        )
+        if element.tag == "dt" and not identifier.startswith("term-"):
+            diagnostics.append(
+                Diagnostic(
+                    path, element.line, "HTML009", "単語帳のidはterm-で始めてください"
+                )
+            )
+    for class_name in ("ex-index", "ex-sidebar", "ex-glossary", "ex-toc"):
+        if sum(class_name in e.attrs.get("class", "").split() for e in elements) != 1:
+            diagnostics.append(
+                Diagnostic(path, 1, "HTML009", f"{class_name}を1つ配置してください")
+            )
+    if not any(element.tag == "dt" for element in elements):
+        diagnostics.append(Diagnostic(path, 1, "HTML009", "単語帳が空です"))
     return diagnostics
 
 
@@ -655,12 +712,13 @@ def check_file(path: Path) -> list[Diagnostic]:
         Diagnostics in rule order. Warnings are included with ``warning=True``.
     """
     text = path.read_text(encoding="utf-8")
+    diagnostics, content = check_template(path, text)
     collector = ElementCollector()
-    collector.feed(text)
+    collector.feed(content)
     elements = collector.elements
 
-    diagnostics = check_forbidden_elements(path, elements)
-    diagnostics += check_stylesheets(path, elements)
+    diagnostics += check_forbidden_elements(path, elements)
+    diagnostics += check_navigation(path, elements)
     meta_diagnostics, sources = check_wiki_source_meta(path, elements)
     diagnostics += meta_diagnostics
     diagnostics += check_link_targets(path, elements)
