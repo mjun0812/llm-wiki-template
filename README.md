@@ -56,7 +56,7 @@
   - 自動修正: なし
 - `check_html.py`
   - 対象: 既定では `html/**/*.html`
-  - 概要: HTML版wikiページがテンプレート規約を満たしているか検査する。外部リソース参照・iframeの禁止 (scriptは共通のテーマ切替スクリプトのみ許可)、共通CSSのみの参照、由来meta (`wiki-source`) の宣言、ローカルリンクの存在を確認する。由来metaと参照先Markdownの `updated` がずれた陳腐化は警告として報告し、commitはブロックしない。
+  - 概要: HTML版wikiページがテンプレート規約を満たしているか検査する。テンプレートのCSSと実行ブロックの一致、iframeとテンプレート外の外部リソースの禁止、サイドバーとページ内リンク、由来meta (`wiki-source`) の宣言、ローカルリンクの存在を確認する。由来metaと参照先Markdownの `updated` がずれた陳腐化は警告として報告し、commitはブロックしない。
   - メモ: `html/index.html` は由来metaの宣言を免除される。`--candidates` を付けると、lintの代わりにHTML生成基準 (参照sourcesが3件以上、または本文合計30KB以上。基準値はスクリプト冒頭の定数) を満たすwikiページを `missing` / `stale` / `current` の状態付きで一覧する。
   - 自動修正: なし
 - `web-to-markdown.mjs`
@@ -84,14 +84,15 @@
 | `WIKI002` | `check_wiki_links.py`  | `missing-link-target`       | ローカルリンクの参照先ファイルが存在しない。                                                  |
 | `WIKI003` | `check_wiki_links.py`  | `emphasized-link-label`     | リンクテキストにファイル名のアンダースコアが残り、強調として解釈されている。                  |
 | `WIKI004` | `check_wiki_links.py`  | `unreferenced-source`       | `sources/` のメモがどのWikiページからも参照されていない (`--check-unreferenced` 指定時のみ)。 |
-| `HTML001` | `check_html.py`        | `external-resource`         | CSS・画像などのリソースを外部URLから読み込んでいる (`a` の外部リンクは対象外)。               |
-| `HTML002` | `check_html.py`        | `disallowed-script`         | 共通スクリプト (`html/assets/theme.js`) 以外のscriptを使用している。                          |
+| `HTML001` | `check_html.py`        | `external-resource`         | テンプレートの任意ブロック以外でリソースを外部URLから読み込んでいる (`a` のリンクは対象外)。  |
+| `HTML002` | `check_html.py`        | `disallowed-script`         | テンプレート外のscriptを使っている、または実行ブロックを変更している。                        |
 | `HTML003` | `check_html.py`        | `iframe-forbidden`          | iframeタグを使用している。                                                                    |
-| `HTML004` | `check_html.py`        | `stylesheet-mismatch`       | stylesheetが共通CSS (`html/assets/style.css`) 1つになっていない。                             |
+| `HTML004` | `check_html.py`        | `stylesheet-mismatch`       | CSSがテンプレートと一致しない、またはページ固有のCSSを追加している。                          |
 | `HTML005` | `check_html.py`        | `missing-wiki-source`       | 由来meta (`wiki-source`) が無い、または形式が不正 (`html/index.html` は免除)。                |
 | `HTML006` | `check_html.py`        | `missing-link-target`       | ローカルリンクまたは由来metaの参照先ファイルが存在しない。                                    |
 | `HTML007` | `check_html.py`        | `unexpanded-placeholder`    | `{{...}}` 形式のテンプレート値が残っている。                                                  |
 | `HTML008` | `check_html.py`        | `stale-page`                | 由来metaの `updated` が参照先Markdownの現在値と異なる (警告のみ、commitはブロックしない)。    |
+| `HTML009` | `check_html.py`        | `invalid-navigation`        | サイドバー、見出しid、単語帳、ページ内リンクが不正。                                          |
 
 ## Setup
 

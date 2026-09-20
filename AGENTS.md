@@ -5,7 +5,7 @@
 - `inbox/` — 未処理メモの投入箱。LLMがここから `sources/` へ取り込む。
 - `sources/` — 原資料。原則として内容を書き換えない。カテゴリ別のサブディレクトリに分かれるが、構成は固定ではなく新規メモに応じて見直してよい。
 - `wiki/` — LLMが整形・統合して維持する知識ベース。`index.md` で索引、`changelog.md` で取り込み履歴を管理する。
-- `html/` — LLMが生成するHTML版wiki。`wiki/` とはページ分けを変えてよい派生層で、共通のCSSとテーマ切替スクリプトは `html/assets/` に置く。知識の正本は常にMarkdown側 (`sources/` と `wiki/`)。
+- `html/` — LLMが生成するHTML版wiki。`wiki/` とはページ分けを変えてよい派生層で、exhtmlを基にした `_template/wiki-page.html` のCSSと実行処理を各ページへ含める。左は階層索引、右は独立してスクロールできる単語帳と目次とする。知識の正本は常にMarkdown側 (`sources/` と `wiki/`)。
 - `_template/` — テンプレート (`source.md` / `wiki.md` / `wiki-page.html`)。
 - `scripts/` — 検証スクリプト (`check_sources.py` / `check_image_links.py` / `check_wiki_links.py` / `check_html.py`) と、Web取り込みCLI (`web-to-markdown.mjs`)。
 - `.agents/skills/` — local skill (`inbox-to-sources` など)。
