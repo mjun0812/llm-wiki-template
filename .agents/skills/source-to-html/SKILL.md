@@ -20,7 +20,7 @@ Markdown側の編集、HTMLページの削除・索引整理はこのSkillの範
 - **知識の正本は常にMarkdown**：新しい知識・主張・結論をHTMLに直接書かない。統合的な結論・判断は `wiki/` の記述に従い、矛盾させない。`wiki/` にまだ無い結論が必要になったら、先に `source-to-wiki` でwiki側を更新するよう報告する。
 - **転記と表現はHTMLの自由**：`sources/` からの詳細な転記・要約と、視覚的な再構成 (カード、画像の横並び、表、折りたたみ) はHTML側の役割。`wiki/` のページ分けに縛られなくてよい。複数wikiページの統合も、1主題の掘り下げもできる。
 - **Markdown側は読むだけ**：`sources/` と `wiki/` 本文を変更しない。更新するのは `html/` 配下、`wiki/changelog.md` のみ。
-- **テンプレート必須**：ページは `_template/wiki-page.html` から作る。exhtmlを基にした配色、書体、見出し、図、コードの部品を使う。CSSと実行処理はHTML内に含まれる。テンプレートのCSSと `exhtml:runtime` ブロックは変更せず、ページ固有のstyle/scriptを追加しない。style属性は図の配置調整など最小限にする。
+- **テンプレート必須**：ページはリポジトリ同梱の `_template/wiki-page.html` から作る。配色、書体、見出し、図、コードの部品はこのテンプレートの定義を使う。CSSと実行処理はHTML内に含まれる。テンプレートのCSSと必須の実行処理ブロックは変更せず、ページ固有のstyle/scriptを追加しない。style属性は図の配置調整など最小限にする。
 - **実行処理はテンプレートだけ**：テーマ切替、単語帳への移動、目次生成はテンプレートに任せる。MathJax / Shiki / Mermaidの任意ブロックは使う場合だけ残し、使わないブロックは開始コメントから終了コメントまで削除する。外部読み込みはその任意ブロック内だけ許可する。iframeは使わず、原資料の画像はrepo内の相対パスで参照する。
 - **由来metaを必ず宣言する**：内容の根拠にしたすべての `sources/` `wiki/` のMarkdownを `<meta name="wiki-source" content="<repo相対パス> <そのファイルのfrontmatter updated>">` で1件ずつ宣言する。読んだが使わなかったファイルは含めない。
 - **手修正しない前提で作る**：生成後のHTMLは編集せず、更新はページ丸ごと再生成する (`html-maintenance` の範囲)。
@@ -73,7 +73,7 @@ Markdown側の編集、HTMLページの削除・索引整理はこのSkillの範
 
 #### 本文の部品と図
 
-- exhtmlの部品を使う: `.ex-card` / `.ex-grid-2`、`.ex-note` / `.ex-note.is-important`、`.ex-chip`、`blockquote.ex-quote`、`.ex-figure` / `.ex-figure-frame`、`pre.ex-diff`、`details`。同じカードを敷き詰めるだけの構成にしない。
+- テンプレートに定義された部品を使う: `.ex-card` / `.ex-grid-2`、`.ex-note` / `.ex-note.is-important`、`.ex-chip`、`blockquote.ex-quote`、`.ex-figure` / `.ex-figure-frame`、`pre.ex-diff`、`details`。同じカードを敷き詰めるだけの構成にしない。
 - 表は原則3列までとし、横幅が必要な表は `.ex-table-scroll` で包む。
 - 色はテンプレートのtokenだけを使い、本文の有彩色はリンクと少数の強調に限る。角丸は `.ex-chip` だけとし、絵文字、装飾記号、グラデーション、影を追加しない。
 - 構成や関係はインラインSVGで描く。`.ex-figure-frame` 内に `viewBox` 付きSVGを置き、`fig-node` / `fig-edge` / `fig-label` を使う。カテゴリの塗りは `c1`〜`c4` で指定し、色の意味を `figcaption` に書く。線と文字は `currentColor` に従う。
