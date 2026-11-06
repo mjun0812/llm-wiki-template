@@ -5,9 +5,9 @@
 - `inbox/` — 未処理メモの投入箱。LLMがここから `sources/` へ取り込む。
 - `sources/` — 原資料。原則として内容を書き換えない。カテゴリ別のサブディレクトリに分かれるが、構成は固定ではなく新規メモに応じて見直してよい。
 - `wiki/` — LLMが整形・統合して維持する知識ベース。`index.md` で索引、`changelog.md` で取り込み履歴を管理する。
-- `html/` — LLMが生成するHTML版wiki。`wiki/` とはページ分けを変えてよい派生層で、exhtmlを基にした `_template/wiki-page.html` のCSSと実行処理を各ページへ含める。左は階層索引、右は独立してスクロールできる単語帳と目次とする。知識の正本は常にMarkdown側 (`sources/` と `wiki/`)。
-- `_template/` — テンプレート (`source.md` / `wiki.md` / `wiki-page.html`)。
-- `scripts/` — 検証スクリプト (`check_sources.py` / `check_image_links.py` / `check_wiki_links.py` / `check_html.py`) と、Web取り込みCLI (`web-to-markdown.mjs`)。
+- `html/` — LLMが生成するHTML版wiki。`wiki/` とはページ分けを変えてよい派生層で、exhtmlを基にした `_template/wiki-page.html` のCSSと実行処理を各ページへ含める。左は階層索引、右は独立してスクロールできる単語帳と目次とする。知識の正本は常にMarkdown側(`sources/` と `wiki/`)。
+- `_template/` — テンプレート(`source.md` / `wiki.md` / `wiki-page.html`)。
+- `scripts/` — 検証スクリプト(`check_sources.py` / `check_image_links.py` / `check_wiki_links.py` / `check_html.py`)と、Web取り込みCLI (`web-to-markdown.mjs`)。
 - `.agents/skills/` — local skill (`inbox-to-sources` など)。
 
 ## 基本方針
@@ -15,21 +15,22 @@
 - 常に日本語で作業する。
 - 英語の原資料も、`wiki/` では日本語で整理、要約、索引化する。
 - 英語の原資料を `sources/` に保存する場合は、原文をなるべく維持し、翻訳で置き換えない。
-- `sources/` のカテゴリは出所ではなく内容 (トピック) で決める。AI回答による下調べもトピック別カテゴリに置き、frontmatter の `model` で出所を区別する。AI回答は未検証の調査メモとして扱う。
+- `sources/` のカテゴリは出所ではなく内容(トピック)で決める。AI回答による下調べもトピック別カテゴリに置き、frontmatter の `model` で出所を区別する。AI回答は未検証の調査メモとして扱う。
 - 特定トピックに収まらないアイデア・仮説は `sources/ideas/` に保存する。
 - 取り込み時は `wiki/index.md` と `wiki/changelog.md` を更新する。
 - `wiki/changelog.md` は最新の履歴が一番上に来るように追記する。
 - 新規Markdownを作る場合は、用途に合う `_template/` 以下のテンプレートを使う。
 - ユーザーが与えたテーマを調べて調査メモを作るときは、local skill の `research-to-inbox` を必ず使う。メモは `inbox/` に保存し、以降は通常のinbox処理に乗せる。
-- 公開WebページのURLをメモとして取り込むときは、local skill の `web-to-inbox` を必ず使う。本文抽出とMarkdown化は `scripts/web-to-markdown.mjs` (Defuddleベース) が行い、本文の要約・翻訳・推敲はしない。メモは `inbox/` に保存し、以降は通常のinbox処理に乗せる。Web由来のprovenance frontmatter (`source_url` / `canonical_url` / `retrieved_at` / `published_at` / `author` / `extractor`) は `sources/` へ移した後も保持する。
-- `inbox/` から `sources/` へメモを取り込むときは、local skill の `inbox-to-sources` を必ず使う。ファイル名規約 (`YYYY-MM-DD_slug.md`)、frontmatter整備、`scripts/check_sources.py` での検証はそこに集約してある。
+- 公開WebページのURLをメモとして取り込むときは、local skill の `web-to-inbox` を必ず使う。本文抽出とMarkdown化は `scripts/web-to-markdown.mjs` (Defuddleベース)が行い、本文の要約・翻訳・推敲はしない。メモは `inbox/` に保存し、以降は通常のinbox処理に乗せる。Web由来のprovenance frontmatter (`source_url` / `canonical_url` / `retrieved_at` / `published_at` / `author` / `extractor`)は `sources/` へ移した後も保持する。
+- このリポジトリのrootで起動したagentが `research-to-inbox` 以外の形で調査した場合(質問への回答、比較検討、Web検索など)は、回答の最後に調査結果を `inbox/` へメモとして書くかをユーザーに提案する。
+- `inbox/` から `sources/` へメモを取り込むときは、local skill の `inbox-to-sources` を必ず使う。ファイル名規約(`YYYY-MM-DD_slug.md`)、frontmatter整備、`scripts/check_sources.py` での検証はそこに集約してある。
 - `sources/` から `wiki/` を更新するときは、local skill の `source-to-wiki` を必ず使う。原資料は編集せず、Wiki本文、関連リンク、`wiki/index.md`、`wiki/changelog.md` の更新に集中する。
 - `wiki/` 以下の本文を作成・更新する場合は、local skillの `japanese-tech-writing` と `stop-ai-slop-jp` を使い、日本語文書として読みやすく、AI臭の少ない文章に整える。
-- HTML版wikiページを作るときは、local skill の `source-to-html` を必ず使う。対象未指定なら `scripts/check_html.py --candidates` の基準 (参照sources件数・本文合計サイズ) で自動選定し、基準を満たすテーマを生成・再生成する。テンプレート、由来meta、検証はそこに集約してある。
+- HTML版wikiページを作るときは、local skill の `source-to-html` を必ず使う。対象未指定なら `scripts/check_html.py --candidates` の基準(参照sources件数・本文合計サイズ)で自動選定し、基準を満たすテーマを生成・再生成する。テンプレート、由来meta、検証はそこに集約してある。
 - `html/` 配下の点検・再生成・削除は、local skill の `html-maintenance` を必ず使う。HTMLページは手修正せず、更新はページ丸ごと再生成する。
 - HTML版wikiに新しい知識・結論を直接書かない。統合的な結論は `wiki/` の記述に従い、矛盾させない。
 - このリポジトリの元になったtemplate repoの更新を取り込むときは、local skill の `template-sync` を必ず使う。更新の提示と選択、ファイル単位の適用はそこに集約してある。
-- Markdown内の画像リンク (`![alt](path)`) は、原則として **そのMarkdownファイルからの相対パス** で記述する。リポジトリのclone先やマウントパスに依存せず、GitHubやエディタプレビューで一貫して解決できるようにするため。外部画像は絶対URLで指定してよい。
+- Markdown内の画像リンク(`![alt](path)`)は、原則として **そのMarkdownファイルからの相対パス** で記述する。リポジトリのclone先やマウントパスに依存せず、GitHubやエディタプレビューで一貫して解決できるようにするため。外部画像は絶対URLで指定してよい。
 - 原資料へリンクするとき、`YYYY-MM-DD_slug.md` のファイル名をそのままリンクテキストに使わない。アンダースコアがMarkdownの強調として解釈され、`oxfmt` が斜体や太字へ変換して表示が崩れる。リンクテキストではアンダースコアをスペースに置き換える。
 - `oxfmt` はpre-commit hookで全Markdownに走る。`sources/` の本文編集を禁止するルールは、この整形には適用しない。
 
@@ -38,24 +39,24 @@
 1. まず `rg -t md` でMarkdownファイルを全文検索する。`sources/` には英語の原資料がそのまま残っているため、日本語と英語の両方のキーワードで検索する。
 2. 検索対象は目的で使い分ける。整理済みの知識は `wiki/`、詳細や原文は `sources/`、未処理メモは `inbox/`。例: `rg -t md 'キーワード' wiki/ sources/`
 3. キーワードで見つからないときは `wiki/index.md` から主題ページをたどる。
-4. 時期が分かっている場合は、`sources/` のファイル名規約 (`YYYY-MM-DD_slug.md`) を使って `ls sources/*/2026-07-*` のように絞り込める。
+4. 時期が分かっている場合は、`sources/` のファイル名規約(`YYYY-MM-DD_slug.md`)を使って `ls sources/*/2026-07-*` のように絞り込める。
 
 `rg` の具体的なオプション例は README の「検索 Cheet Sheet」を参照。
 
 ## Wikiの品質方針
 
 - Wikiページは主題単位で作る。「1カテゴリ = 1ページ」の巨大なまとめページや、「○○メモの整理」のようなカタログページは作らない。
-- 本文には原資料から抽出した知識 (結論、手順の骨子、判断とその理由) を書く。原資料へのリンク紹介文を並べるだけの本文にしない。具体的な設定値や長い手順は原資料リンクに逃がす。
+- 本文には原資料から抽出した知識(結論、手順の骨子、判断とその理由)を書く。原資料へのリンク紹介文を並べるだけの本文にしない。具体的な設定値や長い手順は原資料リンクに逃がす。
 - 原資料に書かれていない一般論や助言を本文に足さない。
 - 件数などの統計値を本文に書かない。原資料の増減ですぐ古くなる。
 - 主題として書くことがまだ無いメモは、無理にWiki化しない。ページを作るのは、複数メモの統合や横断整理に価値が出てからでよい。
-- `wiki/` の本文では、処理の流れや構成要素の関係を図で示したい場合にmermaid記法 (```mermaid ブロック) を使ってよい。
+- `wiki/` の本文では、処理の流れや構成要素の関係を図で示したい場合にmermaid記法(```mermaid ブロック)を使ってよい。
 
 ## テンプレート運用
 
 - 通常のWikiページを作る場合は `_template/wiki.md` を使う。
-- `sources/` 以下に原資料を保存する場合は `_template/source.md` を使う (取り込みは `inbox-to-sources` skill が担う)。
-- HTML版wikiページを作る場合は `_template/wiki-page.html` を使う (生成は `source-to-html` skill が担う)。
+- `sources/` 以下に原資料を保存する場合は `_template/source.md` を使う(取り込みは `inbox-to-sources` skill が担う)。
+- HTML版wikiページを作る場合は `_template/wiki-page.html` を使う(生成は `source-to-html` skill が担う)。
 - `updated` はファイルを実質的に更新した日付に合わせる。
 
 ## inbox処理
