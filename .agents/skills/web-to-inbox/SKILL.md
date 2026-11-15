@@ -5,7 +5,7 @@ description: 公開WebページのURLを受け取り、scripts/web-to-markdown.m
 
 # web-to-inbox
 
-公開WebページをDefuddleベースのCLIでMarkdown化し、`inbox/` へ保存する。
+公開WebページをwebforaiベースのCLIでMarkdown化し、`inbox/` へ保存する。
 本文抽出・変換・保存はすべてCLIが行い、このSkillはCLIの実行と結果確認だけを担う。
 
 ## 手順

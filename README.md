@@ -61,8 +61,8 @@
   - 自動修正: なし
 - `web-to-markdown.mjs`
   - 対象: 公開WebページのURL
-  - 概要: Defuddleで本文を抽出してMarkdown化し、`inbox/` に保存する。記事中の画像は `inbox/images/` へローカル保存してリンクを相対パスへ書き換える。本文の要約・翻訳・推敲はせず、`source_url` などのprovenance frontmatterを付与する。実行は `node scripts/web-to-markdown.mjs <URL>`。Agent向けに `--json` でJSONを返す。オプションは `--help` を参照。
-  - 依存: `package.json` の `defuddle` / `jsdom` (`npm install` で導入)
+  - 概要: webforaiで本文を抽出してMarkdown化し、`inbox/` に保存する。記事中の画像は `inbox/images/` へローカル保存してリンクを相対パスへ書き換える。本文の要約・翻訳・推敲はせず、`source_url` などのprovenance frontmatterを付与する。実行は `node scripts/web-to-markdown.mjs <URL>`。Agent向けに `--json` でJSONを返す。オプションは `--help` を参照。
+  - 依存: `package.json` の `webforai` (`npm install` で導入)
 
 検証スクリプト (`check_*.py`) は、引数なしでは既定の対象を検査する。
 ファイルまたはディレクトリを引数に渡すと、その範囲だけを検査する。
@@ -97,11 +97,16 @@
 ## Setup
 
 1. このテンプレートから新規リポジトリを作成する。
-2. pre-commit hookを導入する。
+2. Node・Python・pre-commitの版は `mise.toml` で固定している。リポジトリ直下で、miseで固定した版を入れ、Nodeの依存とpre-commit hookを導入する。
 
 ```sh
+mise install
+npm install
 pre-commit install
 ```
+
+Pythonの仮想環境 `.venv` は、miseを有効にしたshellでリポジトリに入ったときか、初回の `mise exec` でmiseが作る。
+リポジトリ内の `python3` は、この仮想環境を通して固定した版を指す。
 
 検証は次のコマンドでも手動実行できる。
 
