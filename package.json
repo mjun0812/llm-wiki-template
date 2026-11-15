@@ -3,7 +3,6 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "defuddle": "^0.19.2",
-    "jsdom": "^30.0.1"
+    "webforai": "^5.0.2"
   }
 }

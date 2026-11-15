@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 公開WebページのURLを受け取り、Defuddleで本文をMarkdown化して inbox/ に保存するCLI。
+// 公開WebページのURLを受け取り、webforaiで本文をMarkdown化して inbox/ に保存するCLI。
 // 本文の文言は変更せず、HTML構造のMarkdown写像・URLのabsolute化・画像のローカル保存だけを行う。
 // 人間のターミナル実行とAgent Skill (--json) の両方から同じ経路で使う。
 
@@ -12,8 +12,7 @@ import path from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 
-import { Defuddle } from "defuddle/node";
-import { JSDOM, VirtualConsole } from "jsdom";
+import { detectClientShell, htmlToMarkdownWithMetadata, SHELL_EMPTY_THRESHOLD } from "webforai";
 
 const USER_AGENT = "Mozilla/5.0 (compatible; web-to-markdown/1.0; +https://github.com/mjun0812/llm-wiki-template)";
 const FETCH_TIMEOUT_MS = 30_000;
@@ -23,7 +22,6 @@ const MAX_ASSET_BYTES = 20 * 1024 * 1024;
 const MAX_TOTAL_ASSET_BYTES = 100 * 1024 * 1024;
 const ARTICLE_ID_LENGTH = 10;
 const CONTENT_HASH_LENGTH = 14;
-const SHORT_CONTENT_WORD_COUNT = 20;
 const MAX_SLUG_LENGTH = 80;
 
 // scripts/check_image_links.py の IMAGE_EXTENSIONS と揃える。
@@ -48,7 +46,7 @@ const STRICT_FAILURE_WARNINGS = new Set([
 
 const HELP = `Usage: node scripts/web-to-markdown.mjs <URL> [options]
 
-公開WebページをDefuddleでMarkdown化し、inbox/ に保存する。
+公開WebページをwebforaiでMarkdown化し、inbox/ に保存する。
 
 Options:
   --output-dir <dir>   出力ディレクトリ (既定: inbox)
@@ -350,27 +348,6 @@ function shortSha256(text, length) {
 }
 
 // ---------------------------------------------------------------------------
-// GFM normalization
-// ---------------------------------------------------------------------------
-
-// Defuddleはfenced code block内のバッククォートを `\`` にエスケープし、コード本文を
-// 変えてしまう。エスケープは全バッククォートへの一律のバックスラッシュ挿入なので、
-// fence内だけ1つ剥がすことで正確に元へ戻せる。これ以外の独自変換は追加しない。
-export function unescapeFencedCode(markdown) {
-  let insideFence = false;
-  return markdown
-    .split("\n")
-    .map((line) => {
-      if (/^\s*(`{3,}|~{3,})/.test(line)) {
-        insideFence = !insideFence;
-        return line;
-      }
-      return insideFence ? line.replaceAll("\\`", "`") : line;
-    })
-    .join("\n");
-}
-
-// ---------------------------------------------------------------------------
 // asset localizer
 // ---------------------------------------------------------------------------
 
@@ -504,39 +481,19 @@ async function localizeAssets({ markdown, articleId, imagesDir, warnings, fetchI
 // main pipeline
 // ---------------------------------------------------------------------------
 
-// Defuddleのauthor/share widget除去は、trimmed textがこのパターンに一致する要素を
-// 語数の少ない親要素ごと削除する (dist/removals/content-patterns.js の SHARE_AUTHOR_LABEL)。
-// syntax highlighterのtoken span (例: shikiの `<span> Author</span>`) が誤爆すると
-// コード行が丸ごと消えるため、pre/code内の該当token spanを事前にテキストへ
-// unwrapして防ぐ。textContentは変わらないため本文の忠実性には影響しない。
-const AUTHOR_WIDGET_LABEL_PATTERN = /^(?:share|follow|authors?|written\s+by)$/i;
-
-export function protectCodeTokenSpans(document) {
-  for (const span of document.querySelectorAll("pre span, code span")) {
-    if (span.children.length === 0 && AUTHOR_WIDGET_LABEL_PATTERN.test((span.textContent ?? "").trim())) {
-      span.replaceWith(document.createTextNode(span.textContent));
-    }
-  }
-}
-
-function detectDocumentWarnings(document, warnings) {
-  if (document.querySelector("canvas")) {
+// 元のHTML全体を正規表現で見る。<script>内の文字列にも一致しうるが、どれも助言の警告なので許容する。
+function detectHtmlWarnings(html, warnings) {
+  if (/<canvas[\s>/]/i.test(html)) {
     warnings.push({ code: "WEBMD_WARN_CANVAS_UNSUPPORTED", message: "canvasによる図は保存できません" });
   }
-  if (document.querySelector('img[src^="blob:"]')) {
+  if (/<img\b[^>]*?\bsrc\s*=\s*["']?blob:/i.test(html)) {
     warnings.push({ code: "WEBMD_WARN_BLOB_URL", message: "blob: URLの画像は保存できません" });
   }
-}
-
-function detectContentWarnings(content, wordCount, warnings) {
-  if (/<svg[\s>]/i.test(content)) {
-    warnings.push({ code: "WEBMD_WARN_INLINE_SVG", message: "inline SVGをraw HTMLとして保持しました" });
-  }
-  if (/<table[\s>]/i.test(content)) {
-    warnings.push({ code: "WEBMD_WARN_COMPLEX_TABLE_HTML", message: "複雑な表をraw HTML tableとして保持しました" });
-  }
-  if (wordCount < SHORT_CONTENT_WORD_COUNT) {
-    warnings.push({ code: "WEBMD_WARN_SHORT_CONTENT", message: `本文が短すぎる可能性があります (${wordCount} words)` });
+  if (/<t[dh]\b[^>]*?\b(?:rowspan|colspan)\s*=\s*["']?\s*(?:[2-9]|[1-9]\d+)/i.test(html)) {
+    warnings.push({
+      code: "WEBMD_WARN_MERGED_TABLE_CELLS",
+      message: "結合セルを含む表があり、Markdownの表では結合が失われます",
+    });
   }
 }
 
@@ -565,37 +522,49 @@ export async function runWebToMarkdown(rawUrl, options = {}) {
     dnsLookup,
   });
 
-  const virtualConsole = new VirtualConsole();
-  const dom = new JSDOM(page.body.toString("utf-8"), { url: page.finalUrl, virtualConsole });
-  const document = dom.window.document;
+  const html = page.body.toString("utf-8");
+  detectHtmlWarnings(html, warnings);
+  const shell = detectClientShell(html);
 
-  // Defuddleがdocumentを変更する可能性があるため、抽出前にDOM由来の情報を取り出す。
-  const canonicalHref = document.querySelector('link[rel="canonical"]')?.href ?? null;
+  log("extract: webforai");
+  const { markdown: extracted, metadata } = htmlToMarkdownWithMetadata(html, {
+    url: page.finalUrl,
+    baseUrl: page.finalUrl,
+  });
+  const content = extracted.trim();
+  // webforaiは本文が空でもタイトルの見出しを付けて返すので、先頭の見出しを除いて判定する。
+  const body = content.replace(/^# [^\n]*/, "").trim();
+  if (!body) {
+    const reason = shell.isShell ? ` (${shell.reason})` : "";
+    throw new CliError("WEBMD_EXTRACT_EMPTY", `webforaiで本文を抽出できませんでした${reason}`);
+  }
+  if (shell.isShell) {
+    warnings.push({
+      code: "WEBMD_WARN_SHORT_CONTENT",
+      message: `JavaScriptで描画するページの可能性があります (${shell.reason})`,
+    });
+  } else {
+    const bodyLength = body.replace(/\s/g, "").length;
+    if (bodyLength < SHELL_EMPTY_THRESHOLD) {
+      warnings.push({ code: "WEBMD_WARN_SHORT_CONTENT", message: `本文が短すぎる可能性があります (${bodyLength} chars)` });
+    }
+  }
+
   let canonicalUrl = null;
-  if (canonicalHref) {
+  if (metadata.canonicalUrl) {
     try {
-      canonicalUrl = parseTargetUrl(canonicalHref).href;
+      canonicalUrl = parseTargetUrl(new URL(metadata.canonicalUrl, page.finalUrl).href).href;
     } catch {
       canonicalUrl = null;
     }
   }
-  detectDocumentWarnings(document, warnings);
-  protectCodeTokenSpans(document);
-
-  log("extract: defuddle");
-  const result = await Defuddle(document, page.finalUrl, { markdown: true });
-  const content = unescapeFencedCode((result.content ?? "").trim());
-  if (!content) {
-    throw new CliError("WEBMD_EXTRACT_EMPTY", "Defuddleで本文を抽出できませんでした");
-  }
-  detectContentWarnings(content, result.wordCount ?? 0, warnings);
 
   const articleId = shortSha256(canonicalUrl ?? sourceUrl, ARTICLE_ID_LENGTH);
-  const publishedAt = normalizePublishedDate(result.published);
+  const publishedAt = normalizePublishedDate(metadata.published);
   const createdDate = publishedAt ?? localDateString(now);
   const retrievedDate = localDateString(now);
 
-  const title = (result.title ?? "").trim() || new URL(sourceUrl).hostname;
+  const title = (metadata.title ?? "").trim() || new URL(sourceUrl).hostname;
   const slug = slugFromTitle(title, articleId);
   const markdownPath = path.join(outputDir, `${createdDate}_${slug}.md`);
   const imagesDir = path.join(outputDir, "images");
@@ -636,10 +605,10 @@ export async function runWebToMarkdown(rawUrl, options = {}) {
     canonical_url: canonicalUrl,
     retrieved_at: localIsoString(now),
     published_at: publishedAt,
-    author: (result.author ?? "").trim() || null,
-    extractor: "defuddle",
+    author: (metadata.author ?? "").trim() || null,
+    extractor: "webforai",
   });
-  const output = `${frontmatter}\n\n# ${title}\n\n${markdown}\n`;
+  const output = `${frontmatter}\n\n${markdown}\n`;
 
   const assetPaths = [...assetFiles.keys()].map((filename) => path.join(imagesDir, filename));
   if (!dryRun) {
