@@ -97,11 +97,16 @@
 ## Setup
 
 1. このテンプレートから新規リポジトリを作成する。
-2. pre-commit hookを導入する。
+2. Node・Python・pre-commitの版は `mise.toml` で固定している。リポジトリ直下で、miseで固定した版を入れ、Nodeの依存とpre-commit hookを導入する。
 
 ```sh
+mise install
+npm install
 pre-commit install
 ```
+
+Pythonの仮想環境 `.venv` は、miseを有効にしたshellでリポジトリに入ったときか、初回の `mise exec` でmiseが作る。
+リポジトリ内の `python3` は、この仮想環境を通して固定した版を指す。
 
 検証は次のコマンドでも手動実行できる。
 
