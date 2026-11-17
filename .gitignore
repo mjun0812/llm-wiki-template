@@ -320,7 +320,6 @@ pip-selfcheck.json
 
 # Project utility scripts
 !scripts/
-!scripts/**
 
 ### Vim ###
 # Swap
