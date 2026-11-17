@@ -97,12 +97,12 @@
 ## Setup
 
 1. このテンプレートから新規リポジトリを作成する。
-2. Node・Python・pre-commitの版は `mise.toml` で固定している。リポジトリ直下で、miseで固定した版を入れ、Nodeの依存とpre-commit hookを導入する。
+2. Node、Python、oxfmt、prekの版は `mise.toml` で固定している。リポジトリ直下で、miseで指定したツールを入れ、Nodeの依存とpre-commit hookを導入する。
 
 ```sh
 mise install
 npm install
-pre-commit install
+mise exec -- prek install
 ```
 
 Pythonの仮想環境 `.venv` は、miseを有効にしたshellでリポジトリに入ったときか、初回の `mise exec` でmiseが作る。
@@ -117,7 +117,8 @@ python3 scripts/check_wiki_links.py
 python3 scripts/check_html.py
 ```
 
-MarkdownのフォーマットにはoxfmtをPre-commit hookで使用する。
+Markdownのフォーマットにはoxfmtをprekのpre-commit hookで使用する。
+oxfmtのhookは `language: system` とし、`mise exec -- oxfmt` で手動実行と同じ版を使う。
 oxfmtはリンクテキスト内のアンダースコアを強調記号として解釈するため、原資料へのリンクを書くときはファイル名をそのまま貼らない。
 崩れは `check_wiki_links.py` の `WIKI003` で検出できる。
 

@@ -1,7 +1,8 @@
 [tools]
 node = "26"
 python = "3.14"
-pre-commit = "4"
+prek = "0.5.10"
+"npm:oxfmt" = "0.77.0"
 
 [env]
 # グローバルなmise設定が別の仮想環境をPATHの先頭に足していても、
